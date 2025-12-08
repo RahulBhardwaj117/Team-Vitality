@@ -1,0 +1,1 @@
+['Date', 'Year', 'Month', 'Max Temperature', 'Avg Temperature', 'Min Temperature', 'Max Dew Point', 'Avg Dew Point', 'Min Dew Point', 'Max Humidity', 'Avg Humidity', 'Min Humidity', 'Max Wind Speed', 'Avg Wind Speed', 'Min Wind Speed', 'Max Pressure', 'Avg Pressure', 'Min Pressure', 'Total Precipitation']

@@ -1,0 +1,13 @@
+
+Forecasting Flood Risk for: 2024-09-20 to 2024-09-20
+Generating weather context from 2024-08-16...
+
+======================================================================
+FLOOD RISK REPORT (2024-09-20 - 2024-09-20)
+======================================================================
+
+✅ No significant flood risk detected for this period.
+
+Weekly Forecast Summary:
+--------------------------------------------------
+Week 38 (starts 2024-09-20): Max Risk 0.3% (Low) | Rain: 0.0mm

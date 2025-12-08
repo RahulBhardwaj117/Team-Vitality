@@ -1,0 +1,61 @@
+{
+  "name": "agriurbanai-desktop",
+  "version": "1.0.0",
+  "description": "AgriUrbanAI Desktop Application - AI-powered platform for smart agriculture and urban planning",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "backend": "node server.js",
+    "backend:dev": "nodemon server.js",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "dist": "electron-builder --publish=never"
+  },
+  "keywords": [
+    "agriculture",
+    "urban-planning",
+    "weather-monitoring",
+    "ai",
+    "electron",
+    "desktop-app"
+  ],
+  "author": "AgriUrbanAI Team",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^4.18.2",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.20.0",
+    "node-fetch": "^3.3.2",
+    "uuid": "^13.0.0"
+  },
+  "build": {
+    "appId": "com.agriurbanai.desktop",
+    "productName": "AgriUrbanAI",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!node_modules/",
+      "!dist/"
+    ],
+    "mac": {
+      "category": "public.app-category.business"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  },
+  "homepage": "https://agriurbanai.com"
+}

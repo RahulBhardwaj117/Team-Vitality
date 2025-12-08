@@ -1,0 +1,47 @@
+================================================================================
+FLOOD PREDICTION FOR NOVEMBER 23, 2025
+Week 47, 2025 (November 16-22, 2025)
+================================================================================
+
+
+================================================================================
+   FLOOD PREDICTION FOR WEEK 47, 2025
+================================================================================
+
+📅 Future date prediction using realistic scenario
+  ℹ Using weather forecasting (scenario: realistic)
+
+Period: 2025-11-17 to 2025-11-23
+
+SUMMARY:
+  - Average Risk: 0.1%
+  - Maximum Risk: 0.1%
+  - High Risk Days (>70%): 0 out of 7
+  - Overall Assessment: LOW - Normal conditions
+
+DAILY FORECAST:
+--------------------------------------------------------------------------------
+Date         Day        Rainfall     Risk %     Assessment
+--------------------------------------------------------------------------------
+2025-11-17   Monday        0.0 mm      0.1%   ✓ LOW
+2025-11-18   Tuesday       0.0 mm      0.1%   ✓ LOW
+2025-11-19   Wednesday     0.0 mm      0.1%   ✓ LOW
+2025-11-20   Thursday      0.0 mm      0.1%   ✓ LOW
+2025-11-21   Friday        0.0 mm      0.1%   ✓ LOW
+2025-11-22   Saturday      0.0 mm      0.1%   ✓ LOW
+2025-11-23   Sunday        0.0 mm      0.1%   ✓ LOW
+
+CONTRIBUTING FACTORS:
+  - Total Rainfall: 0.0 mm
+  - Average 7-day Rainfall: 0.0 mm
+  - Average Soil Moisture: 20.0%
+  - Monsoon Period: No
+  - Groundwater Status: Overexploited
+
+💡 TIP: This is a forecast based on historical patterns.
+   Try different scenarios:
+   - 'optimistic' for dry conditions
+   - 'realistic' for typical conditions (default)
+   - 'pessimistic' for wet conditions
+
+================================================================================

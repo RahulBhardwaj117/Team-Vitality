@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgriUrbanAI | Login</title>
+  <link rel="stylesheet" href="login_AU.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.0.3/src/regular/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.0.3"></script>
+</head>
+
+<body>
+  <div class="auth-container">
+    <div class="form-box">
+      <!-- Logo Section -->
+      <div class="logo-section">
+        <div class="logo-icon">🌾</div>
+        <h1 class="logo-text">AgriUrbanAI</h1>
+        <p class="logo-tagline">Smart Agriculture & Urban Planning</p>
+      </div>
+
+      <h2>Welcome Back</h2>
+      <p style="text-align: center; color: #7f8c8d; margin: 1rem 0 2rem;">Sign in to your AgriUrbanAI account to access
+        your dashboard.</p>
+
+      <!-- Login Form -->
+      <form id="login-form" class="form active">
+        <div class="input-group">
+          <i class="ph-envelope input-icon"></i>
+          <input type="email" id="login-email" placeholder="Email Address" required>
+        </div>
+        <div class="input-group">
+          <i class="ph-lock-key input-icon"></i>
+          <input type="password" id="login-password" placeholder="Password" required>
+        </div>
+
+        <div class="form-options">
+
+          <a href="#" class="forgot-password">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="btn">
+          <span>Login</span>
+          <i class="ph-arrow-right"></i>
+        </button>
+
+        <p class="switch">New to AgriUrbanAI?
+          <a href="signup.html">Create an account</a>
+        </p>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- Demo Credentials Popup -->
+  <div class="demo-credentials">
+    <div class="demo-content">
+      <h4>Quick Demo Access</h4>
+      <div class="demo-buttons">
+        <button class="demo-btn" onclick="fillDemoCredentials('farmer')">
+          <i class="ph-tractor"></i> Farmer
+        </button>
+        <button class="demo-btn" onclick="fillDemoCredentials('urban')">
+          <i class="ph-buildings"></i> Planner
+        </button>
+        <button class="demo-btn" onclick="fillDemoCredentials('admin')">
+          <i class="ph-shield-check"></i> Admin
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="loginAU.js"></script>
+</body>
+
+</html>

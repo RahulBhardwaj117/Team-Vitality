@@ -1,0 +1,137 @@
+import os
+import logging
+import re
+from concurrent.futures import ThreadPoolExecutor
+from twilio.rest import Client
+from xml.sax.saxutils import escape
+from dotenv import load_dotenv
+from gemini_recommendation import get_recommendation
+
+# --------------------------------
+# CONFIG & LOGGING
+# --------------------------------
+load_dotenv()
+logger = logging.getLogger("AgriUrban")
+
+TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
+TWILIO_AUTH_TOKEN  = os.getenv("TWILIO_AUTH_TOKEN")
+TWILIO_PHONE       = os.getenv("TWILIO_PHONE")
+
+# --------------------------------
+# DATA & CONSTANTS
+# --------------------------------
+# In a real app, fetch this from your database
+DEFAULT_USERS = [
+    {"name": "Farmer A", "phone": "+918858031887", "language": "en"},
+    {"name": "Farmer B", "phone": "+919457829890", "language": "hi"},
+    {"name": "Farmer C", "phone": "+917307438928", "language": "mr"}
+]
+
+TEMPLATES = {
+    "heatwave": {
+        "en": "⚠ Heatwave Alert! Temp reaching {temp}°C. Reduce irrigation & stay hydrated.",
+        "hi": "⚠ गर्मी चेतावनी! तापमान {temp}°C तक पहुँच सकता है। पानी बचाएं।",
+        "mr": "⚠ उष्णतेचा इशारा! तापमान {temp}°C पर्यंत जाईल."
+    },
+    "flood": {
+        "en": "⚠ Flood Alert! Heavy rainfall expected. Move to safe areas.",
+        "hi": "⚠ बाढ़ चेतावनी! भारी वर्षा की संभावना। सुरक्षित स्थान पर जाएँ।",
+        "mr": "⚠ पूर सूचना! जोरदार पाऊस अपेक्षित."
+    },
+    "drought": {
+        "en": "⚠ Drought Alert! Very low rainfall. Conserve water.",
+        "hi": "⚠ सूखा चेतावनी! बहुत कम वर्षा। पानी बचाएं।",
+        "mr": "⚠ दुष्काळ सूचना! खूप कमी पाऊस."
+    }
+}
+
+VOICE_LANG = {"en": "en-IN", "hi": "hi-IN", "mr": "mr-IN"}
+
+_phone_re = re.compile(r"^\+[1-9]\d{9,14}$")
+_twilio_client = None
+executor = ThreadPoolExecutor(max_workers=5)
+
+# --------------------------------
+# HELPERS
+# --------------------------------
+def get_twilio_client():
+    global _twilio_client
+    if not _twilio_client and TWILIO_ACCOUNT_SID:
+        _twilio_client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+    return _twilio_client
+
+def is_valid_phone(n):
+    return bool(_phone_re.match(n))
+
+def format_msg(alert, lang, temp=None):
+    msg = TEMPLATES[alert].get(lang, TEMPLATES[alert]["en"])
+    return msg.format(temp=temp) if "{temp}" in msg else msg
+
+# --------------------------------
+# SENDING FUNCTIONS
+# --------------------------------
+def send_sms_single(to, msg):
+    try:
+        if not is_valid_phone(to): return {"to":to,"status":"invalid"}
+        c = get_twilio_client()
+        if not c: return {"to":to,"error":"Twilio not configured"}
+        
+        m = c.messages.create(to=to, from_=TWILIO_PHONE, body=msg)
+        return {"to":to,"status":"sent","sid":m.sid}
+    except Exception as e:
+        logger.error(f"SMS failed for {to}: {e}")
+        return {"to":to,"error":str(e)}
+
+def send_call_single(to, msg, lang):
+    try:
+        if not is_valid_phone(to): return {"to":to,"status":"invalid"}
+        c = get_twilio_client()
+        if not c: return {"to":to,"error":"Twilio not configured"}
+
+        safe = escape(msg)
+        twiml = f"<Response><Say language='{VOICE_LANG.get(lang,'en-IN')}'>{safe}</Say></Response>"
+        c.calls.create(from_=TWILIO_PHONE, to=to, twiml=twiml)
+        return {"to":to,"call":"ok"}
+    except Exception as e:
+        logger.error(f"Call failed for {to}: {e}")
+        return {"to":to,"call_error":str(e)}
+
+# --------------------------------
+# CORE ALERT LOGIC
+# --------------------------------
+def trigger_alerts(risk, temp, rainfall, users=None):
+    """
+    Triggers alerts and recommendations for the given risk condition.
+    
+    Args:
+        risk (str): 'heatwave', 'flood', or 'drought'.
+        temp (float): Current temperature.
+        rainfall (float): Current rainfall.
+        users (list, optional): List of user dicts. Defaults to DEFAULT_USERS.
+    """
+    if risk not in ("heatwave", "flood", "drought"):
+        logger.info(f"Risk '{risk}' is not critical. No alerts sent.")
+        return {"status": "ignored", "reason": "not critical"}
+
+    target_users = users if users is not None else DEFAULT_USERS
+    results = []
+    
+    # 1. Get AI Recommendation
+    try:
+        advice = get_recommendation(risk, temp, rainfall)
+    except Exception as e:
+        logger.error(f"Gemini API failed: {e}")
+        advice = "Follow local agriculture officer guidance."
+
+    # 2. Send Alerts
+    for u in target_users:
+        base_msg = format_msg(risk, u.get("language", "en"), temp)
+        msg = f"{base_msg}\n\n📌 Advice:\n{advice}"
+        
+        # Send in background threads
+        executor.submit(send_sms_single, u["phone"], msg)
+        executor.submit(send_call_single, u["phone"], msg, u.get("language", "en"))
+        
+        results.append({"user": u.get("name", "Unknown"), "status": "queued"})
+    
+    return {"status": "processed", "details": results}

@@ -1,0 +1,572 @@
+/**
+ * Scheduler Service
+ * Handles background jobs and scheduled tasks
+ */
+
+const cron = require('node-cron');
+const Weather = require('../models/Weather');
+const Alert = require('../models/Alert');
+const User = require('../models/User');
+const { logger } = require('../middleware/loggingMiddleware');
+const { cleanOldWeatherData } = require('./weatherService');
+
+/**
+ * Schedule background jobs
+ */
+const scheduleJobs = () => {
+  logger.info('Initializing scheduled jobs...');
+
+  // Clean up old data daily at 2 AM
+  cron.schedule('0 2 * * *', async () => {
+    try {
+      logger.info('Running daily cleanup job...');
+
+      // Clean old weather data (older than 30 days)
+      const weatherDeleted = await cleanOldWeatherData(30);
+
+      // Clean expired alerts
+      const alertDeleted = await Alert.cleanExpired();
+
+      // Clean inactive user sessions (older than 90 days)
+      const inactiveUsers = await User.updateMany(
+        {
+          'status.lastLogin': { $lt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) },
+          role: { $ne: 'admin' }
+        },
+        {
+          'status.isActive': false,
+          'security.lockedUntil': new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Lock for 7 days
+        }
+      );
+
+      logger.info('Daily cleanup completed', {
+        weatherRecordsDeleted: weatherDeleted,
+        alertsDeleted: alertDeleted,
+        usersDeactivated: inactiveUsers.modifiedCount
+      });
+    } catch (error) {
+      logger.error('Error in daily cleanup job:', error);
+    }
+  }, {
+    timezone: 'Asia/Kolkata' // Indian timezone
+  });
+
+  // Generate weekly reports every Sunday at 6 AM
+  cron.schedule('0 6 * * 0', async () => {
+    try {
+      logger.info('Generating weekly reports...');
+
+      const report = await generateWeeklyReport();
+
+      // In a real application, you would send this report via email
+      logger.info('Weekly report generated', report);
+    } catch (error) {
+      logger.error('Error generating weekly report:', error);
+    }
+  }, {
+    timezone: 'Asia/Kolkata'
+  });
+
+  // Health check every 5 minutes
+  cron.schedule('*/5 * * * *', async () => {
+    try {
+      await performHealthCheck();
+    } catch (error) {
+      logger.error('Error in health check:', error);
+    }
+  });
+
+  // Database backup every day at 3 AM
+  cron.schedule('0 3 * * *', async () => {
+    try {
+      logger.info('Starting database backup...');
+      await performDatabaseBackup();
+      logger.info('Database backup completed');
+    } catch (error) {
+      logger.error('Error in database backup:', error);
+    }
+  }, {
+    timezone: 'Asia/Kolkata'
+  });
+
+  // Weather data refresh every 30 minutes during monsoon season (June-September)
+  cron.schedule('*/30 * * 6-9 *', async () => {
+    try {
+      logger.info('Running monsoon season weather update...');
+      await updateWeatherData();
+    } catch (error) {
+      logger.error('Error in monsoon weather update:', error);
+    }
+  });
+
+  // Winter season special updates (December-February)
+  cron.schedule('*/60 * * 12-2 *', async () => {
+    try {
+      logger.info('Running winter season updates...');
+      await checkWinterConditions();
+    } catch (error) {
+      logger.error('Error in winter updates:', error);
+    }
+  });
+
+  // Log rotation check daily at 1 AM
+  cron.schedule('0 1 * * *', () => {
+    try {
+      const { cleanupOldLogs } = require('../middleware/loggingMiddleware');
+      cleanupOldLogs();
+      logger.info('Log rotation check completed');
+    } catch (error) {
+      logger.error('Error in log rotation:', error);
+    }
+  });
+
+  // User engagement analysis weekly
+  cron.schedule('0 8 * * 1', async () => {
+    try {
+      logger.info('Running user engagement analysis...');
+      await analyzeUserEngagement();
+    } catch (error) {
+      logger.error('Error in user engagement analysis:', error);
+    }
+  }, {
+    timezone: 'Asia/Kolkata'
+  });
+
+  logger.info('All scheduled jobs initialized successfully');
+};
+
+/**
+ * Update weather data for all monitored locations
+ */
+const updateWeatherData = async () => {
+  try {
+    const { updateAllWeatherData } = require('./weatherService');
+    await updateAllWeatherData();
+  } catch (error) {
+    logger.error('Error updating weather data:', error);
+  }
+};
+
+/**
+ * Check winter conditions and generate alerts
+ */
+const checkWinterConditions = async () => {
+  try {
+    const coldLocations = await Weather.find({
+      'current.temperature.value': { $lt: 5 },
+      'metadata.lastUpdated': { $gte: new Date(Date.now() - 60 * 60 * 1000) } // Last hour
+    });
+
+    for (const weather of coldLocations) {
+      const alert = await Alert.create({
+        title: 'Cold Weather Advisory',
+        message: `Temperature has dropped to ${weather.current.temperature.value}°C. Take precautions against cold.`,
+        type: 'weather',
+        priority: 'medium',
+        severity: 'info',
+        target: {
+          locations: [{
+            district: weather.location.district,
+            state: weather.location.state,
+            coordinates: weather.location.coordinates,
+            radius: 50
+          }]
+        },
+        trigger: {
+          source: 'automated',
+          autoGenerated: true
+        },
+        schedule: {
+          startTime: new Date(),
+          duration: 480 // 8 hours
+        }
+      });
+
+      logger.info(`Cold weather alert created for ${weather.location.name}`);
+    }
+  } catch (error) {
+    logger.error('Error checking winter conditions:', error);
+  }
+};
+
+/**
+ * Perform system health check
+ */
+const performHealthCheck = async () => {
+  try {
+    const health = {
+      timestamp: new Date(),
+      database: false,
+      weatherService: false,
+      alertSystem: false,
+      memory: process.memoryUsage(),
+      uptime: process.uptime()
+    };
+
+    // Check database connection
+    try {
+      await User.findOne().limit(1);
+      health.database = true;
+    } catch (error) {
+      logger.error('Database health check failed:', error);
+    }
+
+    // Check weather service
+    try {
+      const weatherCount = await Weather.countDocuments();
+      health.weatherService = weatherCount > 0;
+    } catch (error) {
+      logger.error('Weather service health check failed:', error);
+    }
+
+    // Check alert system
+    try {
+      const alertCount = await Alert.countDocuments();
+      health.alertSystem = true;
+    } catch (error) {
+      logger.error('Alert system health check failed:', error);
+    }
+
+    // Log health status
+    const overallHealth = health.database && health.weatherService && health.alertSystem;
+    logger.info('Health check completed', {
+      overall: overallHealth ? 'healthy' : 'unhealthy',
+      ...health
+    });
+
+    return health;
+  } catch (error) {
+    logger.error('Error performing health check:', error);
+    return { error: error.message, timestamp: new Date() };
+  }
+};
+
+/**
+ * Perform database backup
+ */
+const performDatabaseBackup = async () => {
+  try {
+    // In a real application, you would implement actual database backup
+    // For demo purposes, we'll just log the backup operation
+
+    const backupInfo = {
+      timestamp: new Date(),
+      collections: ['users', 'weather', 'alerts'],
+      recordCounts: {}
+    };
+
+    // Get record counts for each collection safely
+    try {
+      backupInfo.recordCounts.users = await User.countDocuments();
+      backupInfo.recordCounts.weather = await Weather.countDocuments();
+      backupInfo.recordCounts.alerts = await Alert.countDocuments();
+    } catch (error) {
+      logger.error('Error counting documents for backup:', error);
+    }
+
+    logger.info('Database backup info:', backupInfo);
+
+    // In production, you would:
+    // 1. Create actual database dump
+    // 2. Upload to cloud storage
+    // 3. Send notification to admins
+    // 4. Clean old backups
+
+    return backupInfo;
+  } catch (error) {
+    logger.error('Error performing database backup:', error);
+    throw error;
+  }
+};
+
+/**
+ * Generate weekly report
+ */
+const generateWeeklyReport = async () => {
+  try {
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    const [
+      totalUsers,
+      newUsers,
+      activeUsers,
+      totalAlerts,
+      newAlerts,
+      resolvedAlerts,
+      weatherRecords,
+      newWeatherRecords
+    ] = await Promise.all([
+      User.countDocuments(),
+      User.countDocuments({ createdAt: { $gte: oneWeekAgo } }),
+      User.countDocuments({ 'status.isActive': true }),
+      Alert.countDocuments(),
+      Alert.countDocuments({ createdAt: { $gte: oneWeekAgo } }),
+      Alert.countDocuments({ status: 'resolved', updatedAt: { $gte: oneWeekAgo } }),
+      Weather.countDocuments(),
+      Weather.countDocuments({ createdAt: { $gte: oneWeekAgo } })
+    ]);
+
+    const report = {
+      period: {
+        start: oneWeekAgo,
+        end: new Date()
+      },
+      users: {
+        total: totalUsers,
+        new: newUsers,
+        active: activeUsers,
+        growth: totalUsers > 0 ? ((newUsers / totalUsers) * 100).toFixed(2) + '%' : '0%'
+      },
+      alerts: {
+        total: totalAlerts,
+        new: newAlerts,
+        resolved: resolvedAlerts,
+        active: totalAlerts - resolvedAlerts,
+        resolutionRate: totalAlerts > 0 ? ((resolvedAlerts / totalAlerts) * 100).toFixed(2) + '%' : '0%'
+      },
+      weather: {
+        totalRecords: weatherRecords,
+        newRecords: newWeatherRecords,
+        coverage: 'Gautam Buddha Nagar, Uttar Pradesh'
+      },
+      system: {
+        uptime: process.uptime(),
+        memoryUsage: process.memoryUsage(),
+        generatedAt: new Date()
+      }
+    };
+
+    return report;
+  } catch (error) {
+    logger.error('Error generating weekly report:', error);
+    throw error;
+  }
+};
+
+/**
+ * Analyze user engagement
+ */
+const analyzeUserEngagement = async () => {
+  try {
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    // Get user engagement metrics
+    const engagementStats = await User.aggregate([
+      {
+        $match: {
+          'status.lastLogin': { $gte: oneWeekAgo }
+        }
+      },
+      {
+        $group: {
+          _id: '$role',
+          totalUsers: { $sum: 1 },
+          avgLoginCount: { $avg: '$status.loginCount' },
+          totalLogins: { $sum: '$status.loginCount' }
+        }
+      }
+    ]);
+
+    // Get alert engagement
+    const alertEngagement = await Alert.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: oneWeekAgo }
+        }
+      },
+      {
+        $group: {
+          _id: '$type',
+          totalAlerts: { $sum: 1 },
+          avgViews: { $avg: '$analytics.views' },
+          totalViews: { $sum: '$analytics.views' }
+        }
+      }
+    ]);
+
+    const analysis = {
+      period: {
+        start: oneWeekAgo,
+        end: new Date()
+      },
+      userEngagement: engagementStats,
+      alertEngagement: alertEngagement,
+      recommendations: generateEngagementRecommendations(engagementStats, alertEngagement),
+      generatedAt: new Date()
+    };
+
+    logger.info('User engagement analysis completed', analysis);
+
+    return analysis;
+  } catch (error) {
+    logger.error('Error analyzing user engagement:', error);
+    throw error;
+  }
+};
+
+/**
+ * Generate engagement recommendations
+ */
+const generateEngagementRecommendations = (userStats, alertStats) => {
+  const recommendations = [];
+
+  // User engagement recommendations
+  userStats.forEach(stat => {
+    if (stat.avgLoginCount < 3) {
+      recommendations.push({
+        type: 'user-engagement',
+        target: stat._id,
+        priority: 'medium',
+        message: `Low engagement for ${stat._id} users. Consider sending engagement emails.`,
+        action: 'send_engagement_campaign'
+      });
+    }
+  });
+
+  // Alert engagement recommendations
+  alertStats.forEach(stat => {
+    if (stat.avgViews < 2) {
+      recommendations.push({
+        type: 'alert-engagement',
+        target: stat._id,
+        priority: 'low',
+        message: `Low visibility for ${stat._id} alerts. Consider improving alert targeting.`,
+        action: 'review_alert_strategy'
+      });
+    }
+  });
+
+  return recommendations;
+};
+
+/**
+ * Manual job execution (for admin use)
+ */
+const executeJob = async (jobName, params = {}) => {
+  try {
+    logger.info(`Executing manual job: ${jobName}`, params);
+
+    switch (jobName) {
+      case 'cleanup':
+        const weatherDeleted = await cleanOldWeatherData(params.days || 30);
+        const alertDeleted = await Alert.cleanExpired();
+        return {
+          success: true,
+          result: {
+            weatherRecordsDeleted: weatherDeleted,
+            alertsDeleted: alertDeleted
+          }
+        };
+
+      case 'backup':
+        const backupResult = await performDatabaseBackup();
+        return {
+          success: true,
+          result: backupResult
+        };
+
+      case 'health-check':
+        const healthResult = await performHealthCheck();
+        return {
+          success: true,
+          result: healthResult
+        };
+
+      case 'weather-update':
+        await updateWeatherData();
+        return {
+          success: true,
+          result: { message: 'Weather data updated successfully' }
+        };
+
+      default:
+        return {
+          success: false,
+          error: `Unknown job: ${jobName}`
+        };
+    }
+  } catch (error) {
+    logger.error(`Error executing manual job ${jobName}:`, error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+/**
+ * Get scheduled jobs status
+ */
+const getJobsStatus = () => {
+  return {
+    scheduledJobs: [
+      {
+        name: 'daily-cleanup',
+        schedule: '0 2 * * *',
+        description: 'Daily cleanup of old data',
+        nextRun: getNextCronRun('0 2 * * *'),
+        enabled: true
+      },
+      {
+        name: 'weekly-report',
+        schedule: '0 6 * * 0',
+        description: 'Weekly report generation',
+        nextRun: getNextCronRun('0 6 * * 0'),
+        enabled: true
+      },
+      {
+        name: 'health-check',
+        schedule: '*/5 * * * *',
+        description: 'System health check',
+        nextRun: getNextCronRun('*/5 * * * *'),
+        enabled: true
+      },
+      {
+        name: 'database-backup',
+        schedule: '0 3 * * *',
+        description: 'Daily database backup',
+        nextRun: getNextCronRun('0 3 * * *'),
+        enabled: true
+      },
+      {
+        name: 'monsoon-weather-update',
+        schedule: '*/30 * * 6-9 *',
+        description: 'Monsoon season weather updates',
+        nextRun: getNextCronRun('*/30 * * 6-9 *'),
+        enabled: true
+      },
+      {
+        name: 'winter-conditions-check',
+        schedule: '*/60 * * 12-2 *',
+        description: 'Winter conditions monitoring',
+        nextRun: getNextCronRun('*/60 * * 12-2 *'),
+        enabled: true
+      }
+    ],
+    timestamp: new Date()
+  };
+};
+
+/**
+ * Get next cron run time
+ */
+const getNextCronRun = (schedule) => {
+  try {
+    const cronParser = require('cron-parser');
+    const interval = cronParser.parseExpression(schedule);
+    return interval.next().toDate();
+  } catch (error) {
+    return null;
+  }
+};
+
+module.exports = {
+  scheduleJobs,
+  updateWeatherData,
+  performHealthCheck,
+  performDatabaseBackup,
+  generateWeeklyReport,
+  analyzeUserEngagement,
+  executeJob,
+  getJobsStatus
+};

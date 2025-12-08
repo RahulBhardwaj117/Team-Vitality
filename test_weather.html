@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .weather-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .temp {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .emoji {
+            font-size: 4rem;
+        }
+
+        .details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .detail-item {
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="weather-card">
+        <h1>Delhi Current Weather Test</h1>
+        <div id="weather-display">
+            <p>Loading weather data...</p>
+        </div>
+        <button onclick="fetchWeather()">Refresh Weather</button>
+    </div>
+
+    <script>
+        async function fetchWeather() {
+            const API_KEY = '45433333a6d1a566b3cdeecff33e3409';
+            const lat = 28.6139;
+            const lon = 77.2090;
+
+            const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`;
+
+            try {
+                console.log('Fetching weather...');
+                const response = await fetch(url);
+                const data = await response.json();
+                console.log('API Response:', data);
+
+                const temp = Math.round(data.main.temp);
+                const feelsLike = Math.round(data.main.feels_like);
+                const humidity = data.main.humidity;
+                const windSpeed = Math.round(data.wind.speed * 3.6);
+                const description = data.weather[0].description;
+                const main = data.weather[0].main;
+
+                const emojiMap = {
+                    'Clear': '☀️',
+                    'Clouds': '☁️',
+                    'Rain': '🌧️',
+                    'Haze': '🌫️',
+                    'Mist': '🌫️'
+                };
+                const emoji = emojiMap[main] || '🌤️';
+
+                document.getElementById('weather-display').innerHTML = `
+                    <div style="text-align: center;">
+                        <div class="emoji">${emoji}</div>
+                        <div class="temp">${temp}°C</div>
+                        <p style="font-size: 1.2rem; text-transform: capitalize; color: #666;">
+                            ${description}
+                        </p>
+                    </div>
+                    <div class="details">
+                        <div class="detail-item">
+                            <strong>Feels Like:</strong><br>${feelsLike}°C
+                        </div>
+                        <div class="detail-item">
+                            <strong>Humidity:</strong><br>${humidity}%
+                        </div>
+                        <div class="detail-item">
+                            <strong>Wind Speed:</strong><br>${windSpeed} km/h
+                        </div>
+                        <div class="detail-item">
+                            <strong>Location:</strong><br>${data.name}
+                        </div>
+                    </div>
+                    <p style="margin-top: 20px; color: #888; font-size: 0.9rem;">
+                        Last updated: ${new Date().toLocaleTimeString()}
+                    </p>
+                `;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('weather-display').innerHTML = `
+                    <p style="color: red;">Error fetching weather: ${error.message}</p>
+                `;
+            }
+        }
+
+        // Fetch weather on page load
+        fetchWeather();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,126 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    🔧 URGENT FIX: .env Configuration 🔧                      ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+PROBLEM DETECTED:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Your server is trying to connect to:
+  ❌ mongodb://localhost:27017/agriurbanai
+
+But it should connect to:
+  ✅ mongodb+srv://Farmer1:farmer123@cluster0.qe42dpw.mongodb.net/Agriurban
+
+This means your .env file has the WRONG MongoDB URI!
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ✅ SOLUTION: Fix Your .env File                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+STEP 1: Check File Location
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Your .env file should be at:
+  C:\Users\sambh\.vscode\TeamVitality-1\AU\backend\.env
+
+NOT:
+  C:\Users\sambh\.vscode\TeamVitality-1\AU\backend\env.env
+
+
+STEP 2: Rename the File (if needed)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+If your file is named "env.env", rename it to ".env":
+
+In PowerShell:
+  cd C:\Users\sambh\.vscode\TeamVitality-1\AU\backend
+  ren env.env .env
+
+
+STEP 3: Update .env Content
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Open: C:\Users\sambh\.vscode\TeamVitality-1\AU\backend\.env
+
+Make sure it contains EXACTLY this:
+
+# MongoDB Cloud Atlas Configuration
+MONGODB_URI=mongodb+srv://Farmer1:farmer123@cluster0.qe42dpw.mongodb.net/Agriurban?retryWrites=true&w=majority&appName=Cluster0
+
+# Server Configuration
+PORT=5000
+NODE_ENV=development
+
+# JWT Configuration
+JWT_SECRET=agriurban_secret_key_2024_production
+JWT_EXPIRE=7d
+
+# OpenAI API Configuration (for Chatbot)
+OPENAI_API_KEY=sk-proj-YOUR_OPENAI_KEY_HERE
+
+# Client URL (for CORS)
+CLIENT_URL=http://localhost:3000
+
+
+STEP 4: Verify the Change
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Look for this line in your .env:
+  MONGODB_URI=mongodb+srv://Farmer1:farmer123@cluster0.qe42dpw.mongodb.net/...
+
+NOT:
+  MONGODB_URI=mongodb://localhost:27017/agriurbanai
+
+
+STEP 5: Restart the Server
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+After fixing the .env file:
+
+1. Stop the server (Ctrl+C)
+2. Restart:
+   cd C:\Users\sambh\.vscode\TeamVitality-1\AU\backend
+   npm start
+
+3. Look for this message:
+   ✅ "Attempting to connect to MongoDB at: mongodb+srv://Farmer1:..."
+
+
+STEP 6: Whitelist Your IP in MongoDB Atlas
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Even with the correct URI, you MUST whitelist your IP:
+
+1. Go to: https://cloud.mongodb.com
+2. Click "Network Access" (left sidebar)
+3. Click "Add IP Address"
+4. Click "Add Current IP Address"
+5. Click "Confirm"
+6. Wait 1-2 minutes
+
+
+WHAT YOU SHOULD SEE AFTER THE FIX:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ Attempting to connect to MongoDB at: mongodb+srv://Farmer1:...
+✅ MongoDB Connected: cluster0.qe42dpw.mongodb.net
+✅ Server running in development mode on port 5000
+
+NOT:
+❌ Attempting to connect to MongoDB at: mongodb://localhost:27017/...
+❌ MongoDB connection error: connect ECONNREFUSED
+
+
+QUICK CHECKLIST:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+□ File is named ".env" (not "env.env")
+□ File is in "backend" folder
+□ MONGODB_URI starts with "mongodb+srv://"
+□ MONGODB_URI contains "Farmer1:farmer123"
+□ MONGODB_URI contains "cluster0.qe42dpw.mongodb.net"
+□ IP is whitelisted in MongoDB Atlas
+□ Server restarted after changes
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  Once fixed, the chatbot will work with FULL database functionality! 🎉     ║
+╚══════════════════════════════════════════════════════════════════════════════╝

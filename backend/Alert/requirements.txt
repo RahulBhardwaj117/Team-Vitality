@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+pydantic
+apscheduler
+twilio
+python-dotenv
+google-generativeai
+requests
+scikit-learn
+joblib

@@ -1,0 +1,60 @@
+<!-- 
+  CHATBOT INTEGRATION PATCH FOR index.html
+  
+  Add these two snippets to your index.html file:
+-->
+
+<!-- ============================================ -->
+<!-- PATCH 1: Add to <head> section (around line 49) -->
+<!-- ============================================ -->
+
+<!-- Add this line AFTER the gps-location.css line -->
+<link rel="stylesheet" href="chatbot.css">
+
+<!-- Your head section should look like this: -->
+<!--
+  <link rel="stylesheet" href="dashboard.css">
+  <link rel="stylesheet" href="login_AU.css">
+  <link rel="stylesheet" href="gps-location.css">
+  <link rel="stylesheet" href="chatbot.css">  ← ADD THIS LINE
+-->
+
+
+<!-- ============================================ -->
+<!-- PATCH 2: Add before </body> tag (around line 1528) -->
+<!-- ============================================ -->
+
+<!-- Add these lines AFTER the gps-location.js script -->
+  
+  <!-- Chatbot Widget -->
+  <script src="chatbot.js"></script>
+
+<!-- Your scripts section should look like this: -->
+<!--
+  <script src="dashboard.js"></script>
+  <script src="loginAU.js"></script>
+  
+  <script>
+    // Navigation functions...
+  </script>
+  
+  <!-- GPS Location Feature -->
+  <script src="gps-location.js"></script>
+  
+  <!-- Chatbot Widget -->              ← ADD THESE LINES
+  <script src="chatbot.js"></script>  ← ADD THESE LINES
+</body>
+-->
+
+
+<!-- ============================================ -->
+<!-- THAT'S IT! Just 2 lines to add -->
+<!-- ============================================ -->
+
+<!-- 
+  After adding these lines:
+  1. Save index.html
+  2. Follow CHATBOT_SETUP.md for complete setup
+  3. Start the backend server
+  4. Open the app and look for the green chat button!
+-->

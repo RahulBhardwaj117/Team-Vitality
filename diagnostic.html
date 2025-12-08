@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Drought Fix Diagnostic</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #00ff00;
+        }
+
+        .section {
+            background: #2a2a2a;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #00ff00;
+        }
+
+        .error {
+            border-color: #ff0000;
+            color: #ff0000;
+        }
+
+        .success {
+            border-color: #00ff00;
+            color: #00ff00;
+        }
+
+        .warning {
+            border-color: #ffaa00;
+            color: #ffaa00;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #00ff00;
+            color: #000;
+            border: none;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        pre {
+            background: #000;
+            padding: 10px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔧 Drought Prediction Diagnostic Tool</h1>
+
+    <div class="section">
+        <h2>Step 1: Test Backend API</h2>
+        <button onclick="testAPI()">Test Drought API</button>
+        <div id="api-result"></div>
+    </div>
+
+    <div class="section">
+        <h2>Step 2: Check HTML Elements</h2>
+        <button onclick="checkElements()">Check DOM Elements</button>
+        <div id="element-result"></div>
+    </div>
+
+    <div class="section">
+        <h2>Step 3: Test Standalone Script</h2>
+        <button onclick="testStandalone()">Run Standalone Update</button>
+        <div id="standalone-result"></div>
+    </div>
+
+    <div class="section">
+        <h2>Step 4: View Current Values</h2>
+        <button onclick="showCurrentValues()">Show Drought Section Values</button>
+        <div id="current-values"></div>
+    </div>
+
+    <script>
+        async function testAPI() {
+            const div = document.getElementById('api-result');
+            div.innerHTML = '<p>⏳ Testing API...</p>';
+
+            try {
+                const response = await fetch('http://localhost:8000/predict/drought/integrated', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        forecast: [
+                            { day: "2024-12-04", condition: "Clear", rain_chance: 10, temp: 25, icon: "☀️", humidity: 60, wind: 10, min_temp: 20, max_temp: 30 }
+                        ],
+                        location: "Delhi"
+                    })
+                });
+
+                const data = await response.json();
+                div.innerHTML = `
+                    <div class="success">
+                        <p>✅ API Working! Status: ${response.status}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                div.innerHTML = `<div class="error"><p>❌ API Failed: ${error.message}</p></div>`;
+            }
+        }
+
+        function checkElements() {
+            const div = document.getElementById('element-result');
+
+            // Open index.html in iframe to check its elements
+            const iframe = document.createElement('iframe');
+            iframe.src = '/index.html';
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+
+            setTimeout(() => {
+                const doc = iframe.contentDocument || iframe.contentWindow.document;
+                const droughtSection = doc.querySelector('.drought-section');
+                const riskValue = doc.querySelector('.drought-section .risk-meter .value');
+                const riskMeter = doc.querySelector('.drought-section .risk-meter');
+                const desc = doc.querySelector('.drought-section p');
+                const list = doc.querySelector('.drought-section .prediction-list');
+
+                let html = '<div class="section">';
+                html += `<p>Drought Section: ${droughtSection ? '✅ Found' : '❌ Not Found'}</p>`;
+                html += `<p>Risk Value Element: ${riskValue ? '✅ Found' : '❌ Not Found'}</p>`;
+                html += `<p>Risk Meter Element: ${riskMeter ? '✅ Found' : '❌ Not Found'}</p>`;
+                html += `<p>Description Element: ${desc ? '✅ Found' : '❌ Not Found'}</p>`;
+                html += `<p>List Element: ${list ? '✅ Found' : '❌ Not Found'}</p>`;
+
+                if (riskValue) {
+                    html += `<p>Current Risk Value Text: <strong>${riskValue.textContent}</strong></p>`;
+                }
+
+                html += '</div>';
+                div.innerHTML = html;
+
+                document.body.removeChild(iframe);
+            }, 2000);
+        }
+
+        function testStandalone() {
+            const div = document.getElementById('standalone-result');
+            div.innerHTML = '<p>⏳ Opening index.html to test standalone script...</p>';
+
+            // Open in new window
+            const win = window.open('/index.html#prediction', '_blank');
+
+            div.innerHTML = `
+                <div class="warning">
+                    <p>⚠️ New window opened with index.html</p>
+                    <p>1. Wait 5 seconds</p>
+                    <p>2. Press F12 in that window</p>
+                    <p>3. Look for console messages with "[STANDALONE]"</p>
+                    <p>4. Check if Drought Analysis section shows real data</p>
+                </div>
+            `;
+        }
+
+        function showCurrentValues() {
+            const div = document.getElementById('current-values');
+
+            fetch('/index.html')
+                .then(r => r.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+
+                    const droughtSection = doc.querySelector('.drought-section');
+
+                    if (droughtSection) {
+                        div.innerHTML = `
+                            <div class="success">
+                                <p>✅ Drought section found in HTML</p>
+                                <pre>${droughtSection.outerHTML.substring(0, 500)}...</pre>
+                            </div>
+                        `;
+                    } else {
+                        div.innerHTML = '<div class="error"><p>❌ Drought section not found in HTML</p></div>';
+                    }
+                });
+        }
+    </script>
+</body>
+
+</html>

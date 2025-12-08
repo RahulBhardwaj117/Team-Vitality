@@ -1,0 +1,38 @@
+{
+    "forecast": [
+        {
+            "day": "Today",
+            "condition": "Sunny",
+            "rain_chance": 0,
+            "temp": 38,
+            "icon": "☀️",
+            "humidity": 45,
+            "wind": 10,
+            "min_temp": 28,
+            "max_temp": 38
+        },
+        {
+            "day": "Tomorrow",
+            "condition": "Sunny",
+            "rain_chance": 0,
+            "temp": 40,
+            "icon": "☀️",
+            "humidity": 42,
+            "wind": 12,
+            "min_temp": 30,
+            "max_temp": 40
+        },
+        {
+            "day": "Friday",
+            "condition": "Sunny",
+            "rain_chance": 0,
+            "temp": 42,
+            "icon": "☀️",
+            "humidity": 40,
+            "wind": 11,
+            "min_temp": 32,
+            "max_temp": 42
+        }
+    ],
+    "location": "Delhi"
+}

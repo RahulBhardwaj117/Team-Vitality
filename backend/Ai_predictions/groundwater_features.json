@@ -1,0 +1,23 @@
+[
+  "Extractable_Resource",
+  "Total_Extraction",
+  "District_Total_Recharge",
+  "District_Total_Extractable",
+  "District_Total_Extraction",
+  "District_Irrigation",
+  "District_Domestic",
+  "District_Industrial",
+  "District_Avg_Stage",
+  "District_Net_GW_Future",
+  "District_Extraction_Ratio",
+  "District_Irrigation_Share",
+  "District_Domestic_Share",
+  "District_Sustainability",
+  "unit_extraction_efficiency",
+  "unit_share_of_district_extraction",
+  "unit_share_of_district_resource",
+  "extraction_vs_district_avg",
+  "overextraction_indicator",
+  "unit_resource_size",
+  "unit_extraction_size"
+]

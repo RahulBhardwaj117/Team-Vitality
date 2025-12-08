@@ -1,0 +1,34 @@
+[
+  {
+    "name": "Farmer A",
+    "phone": "+919999999999",
+    "language": "en",
+    "location": "Gautam Buddha Nagar",
+    "email": "farmerA@example.com",
+    "role": "farmer"
+  },
+  {
+    "name": "Farmer B",
+    "phone": "+919999999998",
+    "language": "hi",
+    "location": "Delhi NCR",
+    "email": "farmerB@example.com",
+    "role": "farmer"
+  },
+  {
+    "name": "Farmer C",
+    "phone": "+919999999997",
+    "language": "mr",
+    "location": "Maharashtra",
+    "email": "farmerC@example.com",
+    "role": "farmer"
+  },
+  {
+    "name": "Test User",
+    "phone": "+919999999990",
+    "language": "en",
+    "location": "Test Location",
+    "email": "test@example.com",
+    "role": "tester"
+  }
+]

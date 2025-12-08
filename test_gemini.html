@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini API Test</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+        }
+
+        #output {
+            white-space: pre-wrap;
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .error {
+            color: red;
+        }
+
+        .success {
+            color: green;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Gemini API Test</h1>
+    <button onclick="testGemini()">Test Connection</button>
+    <div id="output">Waiting...</div>
+
+    <script>
+        async function testGemini() {
+            const output = document.getElementById('output');
+            output.textContent = "Testing...";
+
+            const API_KEY = 'AIzaSyC3Dsf6Kb6XPe51waZ94jBsmgCUPWhH6Zw';
+            const URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`;
+
+            try {
+                const response = await fetch(URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: "Hello, are you working?"
+                            }]
+                        }]
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    output.innerHTML = `<span class="success">Success!</span>\n\nResponse: ${JSON.stringify(data, null, 2)}`;
+                } else {
+                    output.innerHTML = `<span class="error">Error ${response.status}</span>\n\n${JSON.stringify(data, null, 2)}`;
+                }
+            } catch (error) {
+                output.innerHTML = `<span class="error">Network/Code Error</span>\n\n${error.message}`;
+            }
+        }
+    </script>
+</body>
+
+</html>

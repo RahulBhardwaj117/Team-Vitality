@@ -1,0 +1,26 @@
+
+================================================================================
+   DROUGHT PREDICTION FOR APRIL 2023
+================================================================================
+
+📊 Historical analysis
+
+Period: 2023-04-01 to 2023-04-30
+
+SUMMARY:
+  - Overall Severity: Moderate
+  - Drought Days: 30 out of 30
+  - Total Rainfall: 0.4 mm
+  - Maximum Dry Streak: 30 days
+
+WEEKLY BREAKDOWN:
+--------------------------------------------------------------------------------
+  Week 13: Apr 01-Apr 02  Rain:   0.4mm  Severity:Mild
+  Week 14: Apr 03-Apr 09  Rain:   0.0mm  Severity:Mild
+  Week 15: Apr 10-Apr 16  Rain:   0.0mm  Severity:Moderate
+  Week 16: Apr 17-Apr 23  Rain:   0.0mm  Severity:Moderate
+  Week 17: Apr 24-Apr 30  Rain:   0.0mm  Severity:Severe
+
+DROUGHT RISK:
+  ⚠ MODERATE drought expected - take action
+================================================================================

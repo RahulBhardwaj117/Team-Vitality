@@ -1,0 +1,26 @@
+
+================================================================================
+   DROUGHT PREDICTION FOR NOVEMBER 2021
+================================================================================
+
+📊 Historical analysis
+
+Period: 2021-11-01 to 2021-11-30
+
+SUMMARY:
+  - Overall Severity: Severe
+  - Drought Days: 30 out of 30
+  - Total Rainfall: 0.0 mm
+  - Maximum Dry Streak: 30 days
+
+WEEKLY BREAKDOWN:
+--------------------------------------------------------------------------------
+  Week 44: Nov 01-Nov 07  Rain:   0.0mm  Severity:Severe
+  Week 45: Nov 08-Nov 14  Rain:   0.0mm  Severity:Severe
+  Week 46: Nov 15-Nov 21  Rain:   0.0mm  Severity:Severe
+  Week 47: Nov 22-Nov 28  Rain:   0.0mm  Severity:Severe
+  Week 48: Nov 29-Nov 30  Rain:   0.0mm  Severity:Severe
+
+DROUGHT RISK:
+  ⚠ SEVERE drought expected - take action
+================================================================================

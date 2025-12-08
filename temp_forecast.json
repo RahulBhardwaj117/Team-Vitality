@@ -1,0 +1,89 @@
+{
+  "forecasts": [
+    {
+      "temp": 39.1,
+      "min_temp": 29.6,
+      "humidity": 48.2,
+      "rain_chance": 41.6,
+      "rainfall": 3.14,
+      "condition": "Rain",
+      "icon": "\ud83c\udf27\ufe0f",
+      "day": "Friday",
+      "date": "2025-06-20",
+      "wind": 5.5
+    },
+    {
+      "temp": 38.8,
+      "min_temp": 29.5,
+      "humidity": 46.5,
+      "rain_chance": 36.4,
+      "rainfall": 3.16,
+      "condition": "Rain",
+      "icon": "\ud83c\udf27\ufe0f",
+      "day": "Saturday",
+      "date": "2025-06-21",
+      "wind": 8.2
+    },
+    {
+      "temp": 38.7,
+      "min_temp": 28.2,
+      "humidity": 57.7,
+      "rain_chance": 46.9,
+      "rainfall": 2.93,
+      "condition": "Heavy Rain/Thunderstorm",
+      "icon": "\u26c8\ufe0f",
+      "day": "Sunday",
+      "date": "2025-06-22",
+      "wind": 12.6
+    },
+    {
+      "temp": 38.9,
+      "min_temp": 28.9,
+      "humidity": 56.0,
+      "rain_chance": 45.4,
+      "rainfall": 8.61,
+      "condition": "Heavy Rain/Thunderstorm",
+      "icon": "\u26c8\ufe0f",
+      "day": "Monday",
+      "date": "2025-06-23",
+      "wind": 8.5
+    },
+    {
+      "temp": 39.5,
+      "min_temp": 29.6,
+      "humidity": 59.2,
+      "rain_chance": 50.7,
+      "rainfall": 9.23,
+      "condition": "Heavy Rain/Thunderstorm",
+      "icon": "\u26c8\ufe0f",
+      "day": "Tuesday",
+      "date": "2025-06-24",
+      "wind": 8.2
+    },
+    {
+      "temp": 38.2,
+      "min_temp": 29.1,
+      "humidity": 65.7,
+      "rain_chance": 52.2,
+      "rainfall": 11.09,
+      "condition": "Heavy Rain/Thunderstorm",
+      "icon": "\u26c8\ufe0f",
+      "day": "Wednesday",
+      "date": "2025-06-25",
+      "wind": 7.0
+    },
+    {
+      "temp": 38.3,
+      "min_temp": 29.0,
+      "humidity": 64.2,
+      "rain_chance": 53.8,
+      "rainfall": 9.29,
+      "condition": "Heavy Rain/Thunderstorm",
+      "icon": "\u26c8\ufe0f",
+      "day": "Thursday",
+      "date": "2025-06-26",
+      "wind": 11.0
+    }
+  ],
+  "status": "success"
+}

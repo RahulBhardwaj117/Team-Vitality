@@ -1,0 +1,54 @@
+======================================================================
+GROUNDWATER PREDICTION MODEL - TRAINING REPORT
+======================================================================
+
+MODEL ARCHITECTURE
+----------------------------------------------------------------------
+Ensemble Type: Stacking Regressor
+Base Models:
+  1. XGBoost Regressor (500 trees)
+  2. Random Forest Regressor (500 trees)
+  3. LightGBM Regressor (500 trees)
+Meta-Learner: Ridge Regression (alpha=1.0)
+
+DATASET
+----------------------------------------------------------------------
+Total Samples: 34
+Training Samples: 25
+Validation Samples: 9
+Features: 21
+Target: Extraction_Stage_Pct
+
+PERFORMANCE METRICS
+----------------------------------------------------------------------
+Cross-Validation R² (5-Fold): 0.8298 ± 0.0822
+Training R²:   0.9507
+Validation R²: 0.7040
+Training MAE:  4.07 Ham
+Validation MAE: 7.06 Ham
+Training RMSE: 4.81 Ham
+Validation RMSE: 9.80 Ham
+
+FEATURES
+----------------------------------------------------------------------
+ 1. Extractable_Resource
+ 2. Total_Extraction
+ 3. District_Total_Recharge
+ 4. District_Total_Extractable
+ 5. District_Total_Extraction
+ 6. District_Irrigation
+ 7. District_Domestic
+ 8. District_Industrial
+ 9. District_Avg_Stage
+10. District_Net_GW_Future
+11. District_Extraction_Ratio
+12. District_Irrigation_Share
+13. District_Domestic_Share
+14. District_Sustainability
+15. unit_extraction_efficiency
+16. unit_share_of_district_extraction
+17. unit_share_of_district_resource
+18. extraction_vs_district_avg
+19. overextraction_indicator
+20. unit_resource_size
+21. unit_extraction_size
