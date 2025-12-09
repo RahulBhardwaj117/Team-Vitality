@@ -20,6 +20,7 @@ const http = require('http');
 // Import custom middleware and routes
 const { errorHandler } = require('./middleware/errorMiddleware');
 const { logger, requestLogger } = require('./middleware/loggingMiddleware');
+const { protect } = require('./middleware/authMiddleware'); // Added: Protect middleware
 const authRoutes = require('./routes/authRoutes');
 const weatherRoutes = require('./routes/weatherRoutes');
 const userRoutes = require('./routes/userRoutes');
@@ -27,6 +28,9 @@ const farmRoutes = require('./routes/farmRoutes');
 const alertRoutes = require('./routes/alertRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const chatbotRoutes = require('./routes/chatbotRoutes');
+
+// Import Models
+const DisasterReport = require('./models/DisasterReport');
 
 // Import services
 const { initializeWeatherService } = require('./services/weatherService');
@@ -44,8 +48,6 @@ const io = socketIo(server, {
     methods: ["GET", "POST"]
   }
 });
-
-// Connect to MongoDB
 // Connect to MongoDB
 const connectDB = async () => {
   try {
@@ -139,6 +141,46 @@ app.use('/api/farms', farmRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/chat', chatbotRoutes);
+
+// --- Disaster Report Routes (Inline for now) ---
+app.post('/api/disaster-reports', protect, async (req, res) => {
+  try {
+    const reportData = req.body;
+    // Basic validation
+    if (!reportData.severity && !reportData.resources && !reportData.sos) {
+       return res.status(400).json({ success: false, error: 'Missing report details' });
+    }
+    const report = await DisasterReport.create(reportData);
+    res.json({ success: true, message: 'Report submitted successfully', reportId: report._id });
+  } catch (error) {
+    logger.error('Error submitting disaster report:', error);
+    res.status(500).json({ success: false, error: 'Failed to submit report' });
+  }
+});
+
+app.get('/api/disaster-reports', protect, async (req, res) => {
+  try {
+    const reports = await DisasterReport.find({ status: 'active' }).sort({ createdAt: -1 });
+    res.json({ success: true, data: reports });
+  } catch (error) {
+    logger.error('Error fetching disaster reports:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch reports' });
+  }
+});
+
+app.post('/api/disaster-reports/archive', protect, async (req, res) => {
+  try {
+     // Check admin
+     if (req.user.role !== 'admin' && req.user.role !== 'demo') {
+        return res.status(403).json({ success: false, error: 'Unauthorized' });
+     }
+     await DisasterReport.updateMany({ status: 'active' }, { status: 'archived' });
+     res.json({ success: true, message: 'All reports archived' });
+  } catch (error) {
+    logger.error('Error archiving reports:', error);
+    res.status(500).json({ success: false, error: 'Failed to archive reports' });
+  }
+});
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {

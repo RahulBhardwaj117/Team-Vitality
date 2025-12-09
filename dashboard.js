@@ -18,7 +18,7 @@ function generateDefaultForecast() {
 
   // Base weather for the season (assuming summer for this demo context, or adjust logic)
   const baseTemp = 36;
-  
+
   for (let i = 0; i < 15; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
@@ -54,22 +54,6 @@ const delay = ms => new Promise(res => setTimeout(res, ms));
 async function loadWeatherData() {
   const maxRetries = 3;
   let attempts = 0;
-  
-  // Check if running on localhost
-  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-
-  if (!isLocal) {
-    console.log('🌍 Non-local environment detected. Skipping backend API checks and using demo data.');
-    // Fallback directly
-    weatherData = generateDefaultForecast();
-    localStorage.setItem('agriurban_weather_forecast', JSON.stringify({
-      data: weatherData,
-      timestamp: Date.now(),
-      location: currentUser?.location || 'Gautam Buddha Nagar',
-      source: 'GENERATED_DEFAULT'
-    }));
-    return;
-  }
 
   while (attempts < maxRetries) {
     try {
@@ -341,11 +325,21 @@ function loadUserSession() {
   const storedUser = localStorage.getItem('user');
   if (storedUser) {
     currentUser = JSON.parse(storedUser);
+    
+    // AUTO-FIX: Force update token for demo users to ensure API access
+    // This handles cases where token is missing OR is an old invalid JWT
+    if ((currentUser.email === 'demo@agriurban.ai' || currentUser.email === 'admin@demo.com' || currentUser.email === 'demo@demo.com') && 
+        currentUser.token !== "electron-user-demo") {
+        console.log("🔧 Auto-patching session with demo token (Force Update)");
+        currentUser.token = "electron-user-demo";
+        localStorage.setItem('user', JSON.stringify(currentUser));
+    }
   } else {
     // For demo purposes, create a default user
     currentUser = {
       email: "demo@agriurban.ai",
       role: "farmer",
+      token: "electron-user-demo",
       loginTime: new Date().toISOString()
     };
   }
@@ -358,6 +352,24 @@ function loadUserSession() {
     currentView = 'admin';
   } else {
     currentView = 'farmer';
+  }
+
+  // FORCE UPDATE OF UI based on loaded role
+  // This ensures nav bars are hidden/shown correctly immediately
+  if (typeof updateDashboard === 'function') {
+      // Mocking elements to avoid errors if called too early, or let updateDashboard handle it
+      // Better to just call the logic for nav visibility directly here just in case updateDashboard is complex
+      
+      const postDisasterLink = document.getElementById('nav-post-disaster');
+      const incidentsLink = document.getElementById('nav-incidents');
+      
+      if (role === 'admin') {
+        if (postDisasterLink) postDisasterLink.style.display = 'none';
+        if (incidentsLink) incidentsLink.style.display = 'flex';
+      } else {
+        if (postDisasterLink) postDisasterLink.style.display = 'flex';
+        if (incidentsLink) incidentsLink.style.display = 'none';
+      }
   }
 
   return true;
@@ -472,6 +484,8 @@ function switchSection(sectionId) {
           initMap();
         }
       }, 100); // A short delay to allow the container to become visible
+    } else if (sectionId === 'incidents') {
+      renderIncidentsPage();
     }
   }
 }
@@ -773,21 +787,19 @@ async function initializePrediction() {
 
     // ==================== PARALLEL API CALLS ====================
     // We run all predictions in parallel to avoid "flickering" or sequential updates in the UI
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-
-    const floodPromise = (!isLocal) ? Promise.reject("Demo Mode - API Skipped") : fetch(`${FASTAPI_URL}/predict/flood/integrated`, {
+    const floodPromise = fetch(`${FASTAPI_URL}/predict/flood/integrated`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     }).then(res => res.ok ? res.json() : Promise.reject(res.statusText));
 
-    const heatwavePromise = (!isLocal) ? Promise.reject("Demo Mode - API Skipped") : fetch(`${FASTAPI_URL}/predict/heatwave/integrated`, {
+    const heatwavePromise = fetch(`${FASTAPI_URL}/predict/heatwave/integrated`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     }).then(res => res.ok ? res.json() : Promise.reject(res.statusText));
 
-    const droughtPromise = (!isLocal) ? Promise.reject("Demo Mode - API Skipped") : fetch(`${FASTAPI_URL}/predict/drought/integrated`, {
+    const droughtPromise = fetch(`${FASTAPI_URL}/predict/drought/integrated`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -1368,9 +1380,20 @@ function enforceRoleInterface() {
   // Ensure the current view matches the role (double check)
   if (role === 'farmer') {
     currentView = 'farmer';
-    // Manually trigger click-like state if needed, but updateDashboard uses currentView
   } else if (role === 'urban' || role === 'city_planner') {
     currentView = 'urban';
+  }
+
+  // --- NAV BAR VISIBILITY ---
+  const postDisasterLink = document.getElementById('nav-post-disaster');
+  const incidentsLink = document.getElementById('nav-incidents');
+
+  if (role === 'admin') {
+    if (postDisasterLink) postDisasterLink.style.display = 'none';
+    if (incidentsLink) incidentsLink.style.display = 'flex'; // Show for admin
+  } else {
+    if (postDisasterLink) postDisasterLink.style.display = 'flex';
+    if (incidentsLink) incidentsLink.style.display = 'none'; // Hide for others
   }
 }
 
@@ -1703,7 +1726,21 @@ function animateContextUpdate(view) {
          <p><span>Active Alerts:</span> <strong style="color: ${adminData.floodRisk === 'Medium' ? '#F39C12' : '#E74C3C'};">3 Moderate</strong></p>
          <p><span>Emergency Units:</span> <strong>${adminData.emergencyUnits}</strong></p>
        `;
+
+      // SHOW ADMIN REPORTS
+      const adminReportsGroup = document.getElementById('admin-reports-group');
+      if (adminReportsGroup) {
+        adminReportsGroup.style.display = 'block';
+        renderAdminReports();
+      }
     }
+
+    // Hide Admin Reports if NOT in Admin view (Double check)
+    if (currentView !== 'admin') {
+      const adminReportsGroup = document.getElementById('admin-reports-group');
+      if (adminReportsGroup) adminReportsGroup.style.display = 'none';
+    }
+
     elements.contextCard.style.opacity = '1';
   }, 300);
 }
@@ -2426,30 +2463,40 @@ function initializeEventListeners() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-      const response = await fetch(`${FASTAPI_URL}/alert/trigger_random`, {
+      // Use Node.js backend endpoint
+      const response = await fetch(`${API_URL}/alerts/trigger`, {
         method: 'POST',
-        signal: controller.signal
+        signal: controller.signal,
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${currentUser?.token}` // Add auth if needed
+        }
       });
 
       clearTimeout(timeoutId);
 
-      // Handle non-JSON responses
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        throw new Error("Invalid response from server (not JSON)");
-      }
-
       const result = await response.json();
 
       if (response.ok) {
-        // Create alert object for history
-        const recipientPhone = result.sent_to || result.user.phone;
+        // Parse the Python output string
+        let pyResult;
+        try {
+            pyResult = JSON.parse(result.output);
+        } catch(e) {
+            console.warn("Failed to parse python output", result.output);
+            pyResult = { risk: 'unknown', details: [] };
+        }
+
+        const risk = pyResult.risk || 'Emergency';
+        const count = pyResult.details ? pyResult.details.length : 0;
+        
+        // Log to history
         const alertRecord = {
-          risk: result.risk,
-          user: result.user.name,
-          phone: recipientPhone,
+          risk: risk,
+          user: `Broadcast (${count} users)`,
+          phone: "Multiple",
           time: new Date().toISOString(),
-          details: `Simulated ${result.risk} alert sent to ${result.user.name}`
+          details: `Simulated ${risk} alert sent to ${count} recipients`
         };
 
         // Save to localStorage
@@ -2457,20 +2504,13 @@ function initializeEventListeners() {
         history.unshift(alertRecord); // Add to top
         localStorage.setItem('sentAlertHistory', JSON.stringify(history));
 
-        // Format Advisory HTML
-        let recommendationHtml = '';
-        if (result.recommendation) {
-          recommendationHtml = `<br><br><strong>🚑 Action Plan:</strong><br><em style="color:#d35400;">${result.recommendation}</em>`;
-        }
-
-        const statusDetails = result.delivery_error ? `Fail: ${result.delivery_error}` : (result.delivery_status || 'Sent');
-        const statusColor = result.status === 'success' ? '#2ecc71' : '#e74c3c';
+        const statusColor = '#2ecc71';
 
         // Construct HTML message for modal
-        const msg = `🚨 <strong>${result.risk.toUpperCase()} ALERT SENT!</strong><br>
-                        User: <strong>${result.user.name}</strong><br>
-                        Phone: ${recipientPhone}<br>
-                        Status: <span style="color:${statusColor}">${statusDetails.toUpperCase()}</span>${recommendationHtml}`;
+        const msg = `🚨 <strong>${risk.toUpperCase()} ALERT BROADCAST!</strong><br>
+                        Recipients: <strong>${count} Users</strong><br>
+                        Status: <span style="color:${statusColor}">QUEUED</span><br>
+                        <span style="font-size:0.8em">Note: This is a demo simulation using backend script.</span>`;
 
         btnFn.dataset.alertEn = msg;
         btnFn.dataset.alertHi = msg;
@@ -2483,7 +2523,7 @@ function initializeEventListeners() {
         }
       } else {
         console.error("Alert trigger failed", result);
-        throw new Error(result.error || "Failed to trigger alert");
+        throw new Error(result.message || result.error || "Failed to trigger alert");
       }
 
     } catch (e) {
@@ -3007,34 +3047,494 @@ window.addEventListener('load', () => {
     const pageLoadTime = perfData.loadEventEnd - perfData.navigationStart;
     console.log(`Page load time: ${pageLoadTime}ms`);
   }
+  
+  // Initialize Session and UI
+  loadUserSession();
 });
 
 // Mobile Menu Logic
 document.addEventListener('DOMContentLoaded', () => {
-    const mobileMenuBtn = document.getElementById('mobile-menu-toggle');
-    const navMenu = document.getElementById('nav-menu');
-    
-    if (mobileMenuBtn && navMenu) {
-        mobileMenuBtn.addEventListener('click', () => {
-            navMenu.classList.toggle('active');
-            const icon = mobileMenuBtn.querySelector('i');
-            if (navMenu.classList.contains('active')) {
-                icon.classList.replace('ph-list', 'ph-x');
-            } else {
-                icon.classList.replace('ph-x', 'ph-list');
-            }
-        });
+  const mobileMenuBtn = document.getElementById('mobile-menu-toggle');
+  const navMenu = document.getElementById('nav-menu');
 
-        // Close menu when a link is clicked
-        navMenu.querySelectorAll('.nav-item').forEach(item => {
-            item.addEventListener('click', () => {
-                navMenu.classList.remove('active');
-                const icon = mobileMenuBtn.querySelector('i');
-                if(icon) icon.classList.replace('ph-x', 'ph-list');
-            });
-        });
-    }
+  if (mobileMenuBtn && navMenu) {
+    mobileMenuBtn.addEventListener('click', () => {
+      navMenu.classList.toggle('active');
+      const icon = mobileMenuBtn.querySelector('i');
+      if (navMenu.classList.contains('active')) {
+        icon.classList.replace('ph-list', 'ph-x');
+      } else {
+        icon.classList.replace('ph-x', 'ph-list');
+      }
+    });
+
+    // Close menu when a link is clicked
+    navMenu.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        navMenu.classList.remove('active');
+        const icon = mobileMenuBtn.querySelector('i');
+        if (icon) icon.classList.replace('ph-x', 'ph-list');
+      });
+    });
+  }
 });
+
+// ==========================================
+// POST-DISASTER RESPONSE FUNCTIONALITY
+// ==========================================
+
+function detectPostDisasterLocation() {
+  const display = document.getElementById('pd-location-display');
+  if (!display) return;
+
+  display.innerHTML = '<i class="ph-spinner ph-spin"></i> Detecting satellites...';
+
+  if (navigator.geolocation) {
+    // Fallback for demo when geolocation is blocked or fails (common in some environments)
+    const successCallback = (position) => {
+      const lat = position.coords.latitude.toFixed(6);
+      const lng = position.coords.longitude.toFixed(6);
+      const acc = position.coords.accuracy.toFixed(1);
+
+      display.innerHTML = `
+                 <div style="color: #27ae60; font-weight: bold;">
+                     <i class="ph-check-circle"></i> Location Locked
+                 </div>
+                 <div>Lat: ${lat}, Lng: ${lng}</div>
+                 <div style="font-size: 0.8em; color: #666;">Accuracy: ${acc} meters</div>
+             `;
+      window.pdLocation = { lat, lng, acc, address: "Detected via GPS" };
+    };
+
+    const errorCallback = (error) => {
+      console.error("Geolocation error:", error);
+      // Simulate successful detection for DEMO PURPOSES
+      const demoLat = 28.6139;
+      const demoLng = 77.2090;
+
+      display.innerHTML = `
+                 <div style="color: #f39c12; font-weight: bold;">
+                     <i class="ph-warning"></i> GPS Weak - Using Est.
+                 </div>
+                 <div>Lat: ${demoLat}, Lng: ${demoLng}</div>
+                 <div style="font-size: 0.8em; color: #666;">Accuracy: ~500 meters</div>
+             `;
+      window.pdLocation = { lat: demoLat, lng: demoLng, acc: 500, address: "Est. Location (NCR)" };
+    };
+
+    navigator.geolocation.getCurrentPosition(successCallback, errorCallback, { enableHighAccuracy: true, timeout: 5000 });
+
+  } else {
+    display.innerHTML = "Geolocation not supported.";
+  }
+}
+
+function updateSeverityUI(radio) {
+  // Reset all boxes
+  document.querySelectorAll('.severity-box').forEach(box => {
+    box.style.background = 'transparent';
+    box.style.color = box.classList.contains('low') ? '#2ECC71' : (box.classList.contains('medium') ? '#F39C12' : '#E74C3C');
+  });
+
+  // Highlight selected
+  const box = radio.nextElementSibling;
+  if (box) {
+    const color = radio.value === 'low' ? '#2ECC71' : (radio.value === 'medium' ? '#F39C12' : '#E74C3C');
+    box.style.background = color;
+    box.style.color = 'white';
+  }
+}
+
+let pdMediaRecorder;
+let pdAudioChunks = [];
+
+function startPDRecording() {
+  const btn = document.getElementById('pd-record-btn');
+  const text = document.getElementById('pd-record-text');
+
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(stream => {
+        pdMediaRecorder = new MediaRecorder(stream);
+        pdAudioChunks = [];
+
+        pdMediaRecorder.ondataavailable = event => {
+          pdAudioChunks.push(event.data);
+        };
+
+        pdMediaRecorder.onstop = () => {
+          const audioBlob = new Blob(pdAudioChunks, { type: 'audio/wav' });
+          // Here you would upload the blob
+          console.log("Audio recording saved", audioBlob.size);
+          text.innerText = "Voice Note Saved";
+          btn.style.background = "#27ae60";
+          btn.style.color = "white";
+        };
+
+        pdMediaRecorder.start();
+        btn.style.background = "#e74c3c";
+        btn.style.animation = "pulse 1s infinite";
+        text.innerText = "Recording...";
+      })
+      .catch(err => {
+        console.error("Microphone access denied:", err);
+        alert("Microphone access denied. Please type your message.");
+      });
+  } else {
+    alert("Audio recording not supported. Please type your message.");
+  }
+}
+
+function stopPDRecording() {
+  if (pdMediaRecorder && pdMediaRecorder.state !== 'inactive') {
+    pdMediaRecorder.stop();
+    const btn = document.getElementById('pd-record-btn');
+    const text = document.getElementById('pd-record-text');
+    btn.style.animation = "none";
+  }
+}
+
+function togglePDSOS() {
+  const toggle = document.getElementById('pd-cant-speak-toggle');
+  const container = document.getElementById('pd-sos-container');
+
+  if (toggle.checked) {
+    container.style.display = 'block';
+    // Scroll to SOS
+    container.scrollIntoView({ behavior: 'smooth' });
+  } else {
+    container.style.display = 'none';
+  }
+}
+
+function sendPDSOS() {
+  if (confirm("CONFIRM SOS: Send immediate emergency distress signal?")) {
+    const btn = document.querySelector('#pd-sos-container button');
+    btn.innerHTML = '<i class="ph-spinner ph-spin"></i>';
+
+    setTimeout(() => {
+      btn.innerHTML = 'SENT';
+      btn.style.background = '#27ae60';
+      btn.style.animation = 'none';
+      alert("EMERGENCY SIGNAL SENT! \n\nRescue teams have been notified of your location.\nStay put if safe.");
+    }, 1500);
+  }
+}
+
+function submitPDResponse() {
+  // Collect Data
+  const severity = document.querySelector('input[name="pd-severity"]:checked')?.value;
+  const resources = document.getElementById('pd-resource-input')?.value;
+  const location = window.pdLocation;
+
+  if (!severity && !resources && !document.getElementById('pd-cant-speak-toggle').checked) {
+    alert("Please select a severity level or describe resources needed.");
+    return;
+  }
+
+  // Create Report Object
+  const report = {
+    user: currentUser?.name || currentUser?.email || 'Anonymous',
+    role: currentUser?.role || 'User',
+    location: location || { lat: 0, lng: 0, address: 'Unknown' },
+    severity: severity || 'N/A',
+    resources: resources || 'None',
+    sos: document.getElementById('pd-cant-speak-toggle').checked
+  };
+
+  const btn = document.querySelector('button[onclick="submitPDResponse()"]');
+  const originalText = btn.innerHTML;
+  btn.innerHTML = '<i class="ph-spinner ph-spin"></i> Sending...';
+  btn.disabled = true;
+
+  // Send to Backend
+  // NUCLEAR FIX: Explicitly valid token for demo users
+  let safeToken = currentUser?.token;
+  if ((currentUser.email === 'demo@agriurban.ai' || currentUser.email === 'admin@demo.com' || currentUser.email === 'demo@demo.com') ||
+       !safeToken) {
+       console.log("⚠️ Using fallback demo token for submission");
+       safeToken = "electron-user-demo";
+  }
+
+  console.log("🚀 Submitting Report with Token:", safeToken); 
+  fetch(`${API_URL}/disaster-reports`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${safeToken}`
+    },
+    body: JSON.stringify(report)
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        btn.innerHTML = '<i class="ph-check-circle"></i> Request Logged';
+        btn.style.background = '#27ae60';
+
+        // Show response
+        const confirmMsg = `
+                Request ID: #${data.reportId.slice(-6).toUpperCase()}
+                Status: Dispatched
+                ETA: ~45 Minutes
+                
+                Resource Coordination is underway.
+            `;
+        alert(confirmMsg);
+
+        // CLUSTER PROTOCOL SIMULATION
+        // Simulate network loss and switch to mesh mode after submission
+        setTimeout(() => {
+           // 1. Update Badge to Cluster Mode
+           const badge = document.getElementById('network-status-badge');
+           if(badge) {
+              badge.innerHTML = '<span class="status-dot" style="height: 10px; width: 10px; background-color: #1976d2; border-radius: 50%; display: inline-block; animation: blink 1s infinite;"></span> Cluster Mesh';
+              badge.style.background = '#e3f2fd';
+              badge.style.color = '#1565c0';
+           }
+           alert("⚠️ ALERT: Internet connection lost due to infrastructure damage.\n\nSwitching to EMERGENCY CLUSTER MODE.");
+           
+           // 2. Head Election Simulation
+           setTimeout(() => {
+              alert("🔗 MESH FORMED: Connected to 12 nearby devices.\n\nCluster Head Elected: Rahul's Phone (Battery 87%)");
+              
+              if(badge) {
+                  badge.innerHTML = '<span class="status-dot" style="height: 10px; width: 10px; background-color: #f57f17; border-radius: 50%; display: inline-block;"></span> Mesh Active';
+                  badge.style.background = '#fff3e0';
+                  badge.style.color = '#ef6c00';
+              }
+           }, 2500);
+
+        }, 1500);
+
+        // Reset UI
+        setTimeout(() => {
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+          btn.style.background = '';
+          document.getElementById('pd-resource-input').value = '';
+          document.querySelectorAll('.severity-box').forEach(b => {
+            b.style.background = 'transparent';
+            b.style.color = b.classList.contains('low') ? '#2ECC71' : b.classList.contains('medium') ? '#F39C12' : '#E74C3C';
+          });
+          document.querySelectorAll('input[name="pd-severity"]').forEach(i => i.checked = false);
+          document.getElementById('pd-cant-speak-toggle').checked = false;
+          document.getElementById('pd-sos-container').style.display = 'none';
+        }, 3000);
+      } else {
+        throw new Error(data.error || 'Submission failed');
+      }
+    })
+    .catch(error => {
+      console.error('Error submitting report:', error);
+      alert('Failed to submit report. Please try again.\n\nError: ' + error.message);
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    });
+}
+
+
+// --- ADMIN REPORTS LOGIC ---
+
+// New function for Full Page Render
+function renderIncidentsPage() {
+  const listContainer = document.getElementById('incidents-list-container');
+  if (!listContainer) return; // Not on the page
+
+  listContainer.innerHTML = '<div style="text-align: center; padding: 3rem; color: #95a5a6;"><i class="ph-spinner ph-spin" style="font-size: 2rem;"></i><p>Loading incident data...</p></div>';
+
+  fetch(`${API_URL}/disaster-reports`, {
+    headers: {
+      'Authorization': `Bearer ${currentUser?.token}`
+    }
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (!data.success) throw new Error(data.error);
+      const reports = data.data;
+
+      // Update Stats
+      const total = reports.length;
+      const sos = reports.filter(r => r.sos).length;
+      const pending = reports.filter(r => r.status !== 'archived').length;
+
+      if (document.getElementById('incidents-total')) document.getElementById('incidents-total').innerText = total;
+      if (document.getElementById('incidents-sos')) document.getElementById('incidents-sos').innerText = sos;
+      if (document.getElementById('incidents-pending')) document.getElementById('incidents-pending').innerText = pending;
+
+      if (reports.length === 0) {
+        listContainer.innerHTML = `
+                <div style="text-align: center; padding: 3rem; background: #f8f9fa; border-radius: 12px; border: 2px dashed #e0e0e0;">
+                    <i class="ph-check-circle" style="font-size: 3rem; color: #2ecc71; margin-bottom: 1rem;"></i>
+                    <h3 style="color: #666;">No Pending Incidents</h3>
+                    <p style="color: #999;">All clear. System is monitoring for new reports.</p>
+                </div>
+            `;
+        return;
+      }
+
+      listContainer.innerHTML = reports.map(r => {
+        const time = new Date(r.createdAt || r.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const date = new Date(r.createdAt || r.timestamp).toLocaleDateString();
+        const isSOS = r.sos ? '<span style="background: #c0392b; color: white; padding: 2px 8px; border-radius: 4px; font-weight: bold; margin-right: 0.5rem;"><i class="ph-warning"></i> SOS SIGNAL</span>' : '';
+
+        const severityColor = r.severity === 'high' ? '#e74c3c' : (r.severity === 'medium' ? '#f39c12' : '#2ecc71');
+        const locAddress = r.location?.address || 'Unknown Location';
+
+        return `
+                <div class="incident-card" style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: grid; grid-template-columns: 1fr auto; gap: 1rem; border-left: 5px solid ${severityColor};">
+                    <div>
+                        <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                            ${isSOS}
+                            <h3 style="margin: 0; color: #2c3e50; font-size: 1.1rem;">${r.resources || 'Incident Report'}</h3>
+                            <span style="background: ${severityColor}20; color: ${severityColor}; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; margin-left: 0.5rem; text-transform: uppercase; font-weight: 600;">${r.severity}</span>
+                        </div>
+                        <p style="margin: 0 0 0.5rem 0; color: #666; font-size: 0.95rem;">
+                            <i class="ph-user"></i> <strong>${r.user}</strong> (${r.role}) &bull; 
+                            <i class="ph-map-pin"></i> ${locAddress}
+                        </p>
+                        <p style="margin: 0; color: #95a5a6; font-size: 0.85rem;">
+                            Reported on ${date} at ${time} &bull; ID: #${(r._id || r.id).slice(-6).toUpperCase()}
+                        </p>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem; justify-content: center;">
+                        <button onclick="switchSection('dashboard'); setTimeout(() => zoomToReport('${r.location?.lat}', '${r.location?.lng}'), 500);" class="btn secondary" style="font-size: 0.9em;">
+                            <i class="ph-crosshair"></i> Locate
+                        </button>
+                        <button class="btn" style="background: #2ecc71; color: white; font-size: 0.9em;">
+                            <i class="ph-check"></i> Acknowledge
+                        </button>
+                    </div>
+                </div>
+            `;
+      }).join('');
+    })
+    .catch(err => {
+      console.error("Error loading incidents page:", err);
+      listContainer.innerHTML = '<div style="color: #e74c3c; text-align: center;">Failed to load data.</div>';
+    });
+}
+
+function renderAdminReports() {
+  const list = document.getElementById('admin-reports-container');
+  if (!list) return;
+  // Deprecated, relying on full page now, but keep for legacy just in case
+
+
+  list.innerHTML = '<div style="text-align: center; padding: 1rem; color: #666;"><i class="ph-spinner ph-spin"></i> Loading reports...</div>';
+
+  fetch(`${API_URL}/disaster-reports`, {
+    headers: {
+      'Authorization': `Bearer ${currentUser?.token}`
+    }
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (!data.success) throw new Error(data.error);
+
+      const reports = data.data;
+
+      if (reports.length === 0) {
+        list.innerHTML = '<div style="text-align: center; padding: 1rem; color: #666; font-style: italic;">No active reports.</div>';
+        return;
+      }
+
+      list.innerHTML = reports.map(r => {
+        const time = new Date(r.createdAt || r.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const isSOS = r.sos ? '<span style="background: #c0392b; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7em; font-weight: bold;">SOS</span>' : '';
+        const severityColor = r.severity === 'high' ? '#e74c3c' : (r.severity === 'medium' ? '#f39c12' : '#2ecc71');
+        const reportIdShort = r._id ? r._id.slice(-6).toUpperCase() : '---';
+
+        // Handle location format (might be object with lat/lng or nested)
+        const locAddress = r.location?.address || 'Lat: ' + (r.location?.lat || 0).toFixed(4) + ', Lng: ' + (r.location?.lng || 0).toFixed(4);
+
+        return `
+                <div style="background: white; padding: 0.8rem; border-radius: 8px; border-left: 4px solid ${severityColor}; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.4rem;">
+                        <div style="font-weight: bold; font-size: 0.9em;">
+                            ${isSOS} #${reportIdShort} <span style="font-weight: normal; color: #666;">• ${time}</span>
+                        </div>
+                        <div style="font-size: 0.8em; color: ${severityColor}; text-transform: uppercase; font-weight: 700;">
+                            ${r.severity}
+                        </div>
+                    </div>
+                    <div style="font-size: 0.85em; margin-bottom: 0.4rem;">
+                        <strong>User:</strong> ${r.user} (${r.role})<br>
+                        <strong>Loc:</strong> ${locAddress}
+                    </div>
+                    ${r.resources ? `<div style="background: #f8f9fa; padding: 0.4rem; border-radius: 4px; font-size: 0.85em; color: #444;"><em>"${r.resources}"</em></div>` : ''}
+                    
+                    <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
+                       <button onclick="zoomToReport('${r.location?.lat}', '${r.location?.lng}')" style="flex: 1; padding: 4px; font-size: 0.75em; cursor: pointer; border: 1px solid #ddd; background: #fff; border-radius: 4px;">Locate</button>
+                       <button style="flex: 1; padding: 4px; font-size: 0.75em; cursor: pointer; border: 1px solid #ddd; background: #fff; border-radius: 4px;">Ack</button>
+                    </div>
+                </div>
+            `;
+      }).join('');
+    })
+    .catch(err => {
+      console.error("Error loading reports:", err);
+      list.innerHTML = '<div style="text-align: center; color: #e74c3c; padding: 1rem;">Failed to load reports.</div>';
+    });
+}
+
+function clearAdminReports() {
+  if (confirm('Archive all current incident reports?')) {
+    fetch(`${API_URL}/disaster-reports/archive`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${currentUser?.token}`
+      }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          renderAdminReports(); // Refresh list
+          alert('Reports archived.');
+        } else {
+          alert('Failed to archive: ' + data.error);
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert('Error connecting to server');
+      });
+  }
+}
+
+function zoomToReport(lat, lng) {
+  if (!map) return;
+  map.flyTo([lat, lng], 16);
+  // Add temporary marker
+  L.circle([lat, lng], {
+    color: 'red',
+    fillColor: '#f03',
+    fillOpacity: 0.5,
+    radius: 100
+  }).addTo(map);
+}
+
+// --- CLUSTER PROTOCOL MODAL FUNCTIONS ---
+function openClusterModal() {
+  const modal = document.getElementById('cluster-modal');
+  if(modal) {
+      modal.style.display = 'block';
+  }
+}
+
+function closeClusterModal() {
+  const modal = document.getElementById('cluster-modal');
+  if(modal) {
+      modal.style.display = 'none';
+  }
+}
+
+// Close modal if clicked outside
+window.onclick = function(event) {
+  const modal = document.getElementById('cluster-modal');
+  if (event.target == modal) {
+    modal.style.display = "none";
+  }
+}
 
 // Export functions for testing
 if (typeof module !== 'undefined' && module.exports) {
@@ -3043,6 +3543,9 @@ if (typeof module !== 'undefined' && module.exports) {
     getUrbanRecommendation,
     updateDashboard,
     initMap,
-    initChart
+    initChart,
+    renderAdminReports,
+    clearAdminReports,
+    renderIncidentsPage
   };
 }

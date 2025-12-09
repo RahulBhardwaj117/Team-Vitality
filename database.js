@@ -92,6 +92,21 @@ class AgriUrbanAIDatabase {
       value: { type: String }
     }, { timestamps: true });
 
+    // Disaster Report Schema
+    this.DisasterReportSchema = new mongoose.Schema({
+      user: { type: String, required: true },
+      role: { type: String, required: true },
+      location: { 
+        lat: { type: Number, required: true },
+        lng: { type: Number, required: true },
+        address: { type: String }
+      },
+      severity: { type: String, required: true },
+      resources: { type: String },
+      sos: { type: Boolean, default: false },
+      status: { type: String, default: 'active', enum: ['active', 'archived'] }
+    }, { timestamps: true });
+
     // Create models
     this.User = mongoose.model('User', this.UserSchema);
     this.WeatherForecast = mongoose.model('WeatherForecast', this.WeatherForecastSchema);
@@ -99,6 +114,7 @@ class AgriUrbanAIDatabase {
     this.Alert = mongoose.model('Alert', this.AlertSchema);
     this.Analytics = mongoose.model('Analytics', this.AnalyticsSchema);
     this.Settings = mongoose.model('Settings', this.SettingsSchema);
+    this.DisasterReport = mongoose.model('DisasterReport', this.DisasterReportSchema);
 
     // Collection names for reference (all lowercase by default)
     this.User.collection.name = 'users';
@@ -107,6 +123,7 @@ class AgriUrbanAIDatabase {
     this.Alert.collection.name = 'alerts';
     this.Analytics.collection.name = 'analytics';
     this.Settings.collection.name = 'settings';
+    this.DisasterReport.collection.name = 'disasterreports';
   }
 
   async connectDatabase() {
@@ -441,6 +458,39 @@ class AgriUrbanAIDatabase {
     }
   }
 
+  // Disaster Report methods
+  async createDisasterReport(reportData) {
+    try {
+      const report = await this.DisasterReport.create(reportData);
+      return report._id.toString();
+    } catch (error) {
+      console.error('createDisasterReport error:', error);
+      throw error;
+    }
+  }
+
+  async getActiveDisasterReports() {
+    try {
+      return await this.DisasterReport.find({ status: 'active' }).sort({ createdAt: -1 }).lean();
+    } catch (error) {
+      console.error('getActiveDisasterReports error:', error);
+      return [];
+    }
+  }
+
+  async archiveAllDisasterReports() {
+    try {
+      const result = await this.DisasterReport.updateMany(
+        { status: 'active' },
+        { status: 'archived' }
+      );
+      return result.modifiedCount > 0;
+    } catch (error) {
+      console.error('archiveAllDisasterReports error:', error);
+      throw error;
+    }
+  }
+
   // Utility methods
   async backupDatabase() {
     try {
@@ -451,7 +501,7 @@ class AgriUrbanAIDatabase {
       };
 
       // Export each collection
-      const collections = ['users', 'weatherforecasts', 'locations', 'alerts', 'analytics', 'settings'];
+      const collections = ['users', 'weatherforecasts', 'locations', 'alerts', 'analytics', 'settings', 'disasterreports'];
       for (const collectionName of collections) {
         backupData.collections[collectionName] = await this[collectionName.toLowerCase()].find({}).lean();
       }
@@ -476,6 +526,7 @@ class AgriUrbanAIDatabase {
       exportData.alerts = await this.Alert.find({}).lean();
       exportData.analytics = await this.Analytics.find({}).lean();
       exportData.settings = await this.Settings.find({}).lean();
+      exportData.disasterreports = await this.DisasterReport.find({}).lean();
 
       return exportData;
     } catch (error) {

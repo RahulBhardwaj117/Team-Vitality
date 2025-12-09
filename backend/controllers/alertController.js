@@ -71,3 +71,30 @@ exports.getUserAlerts = catchAsync(async (req, res) => {
     data: { alerts: [] }
   });
 });
+
+exports.triggerEmergencyAlert = catchAsync(async (req, res) => {
+  const { exec } = require('child_process');
+  const path = require('path');
+  
+  const scriptPath = path.join(__dirname, '../Alert/alerts.py');
+  const scriptDir = path.dirname(scriptPath);
+  
+  console.log(`Executing alert script in: ${scriptDir}`);
+
+  // Execute from the script directory so imports work
+  exec(`python alerts.py`, { cwd: scriptDir }, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`exec error: ${error}`);
+      return res.status(500).json({ status: 'error', message: 'Failed to execute alert script', error: error.message });
+    }
+    
+    console.log(`stdout: ${stdout}`);
+    if (stderr) console.error(`stderr: ${stderr}`);
+    
+    res.status(200).json({
+      status: 'success',
+      message: 'Emergency alert sequence initiated.',
+      output: stdout
+    });
+  });
+});

@@ -44,13 +44,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.0.3/src/regular/style.css">
   <script src="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.0.3"></script>
 
-  <!-- Check if running in Electron -->
-  <script>
-    window.isElectron = typeof window !== 'undefined' && window.process && window.process.type;
-    if (window.isElectron) {
-      console.log('Running in Electron environment');
-    }
-  </script>
+
 
   <!-- External libraries -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
@@ -1055,6 +1049,14 @@
           <i class="ph-bell"></i>
           <span>Alerts</span>
         </a>
+        <a href="#post-disaster" class="nav-item" id="nav-post-disaster">
+          <i class="ph-lifebuoy"></i>
+          <span>Post Disaster</span>
+        </a>
+        <a href="#incidents" class="nav-item" id="nav-incidents" style="display: none;">
+          <i class="ph-warning-octagon"></i>
+          <span>Incoming Incidents</span>
+        </a>
         <a href="#about" class="nav-item">
           <i class="ph-info"></i>
           <span>About</span>
@@ -1142,6 +1144,8 @@
               <canvas id="analytics-chart"></canvas>
             </div>
           </div>
+
+
         </div>
 
         <!-- RIGHT MAP PANEL -->
@@ -1365,6 +1369,218 @@
       </div>
     </div>
 
+    <!-- Post Disaster Content -->
+    <div id="post-disaster-content" class="content-section">
+      <div class="post-disaster-container" style="padding: 2rem; max-width: 800px; margin: 0 auto; padding-top: 100px;">
+        <div class="header" style="text-align: center; margin-bottom: 3rem;">
+          <h1 style="font-size: 2.5rem; color: var(--text-dark); margin-bottom: 0.5rem;"><i class="ph-lifebuoy"></i>
+            Post-Disaster Response</h1>
+          <p style="color: var(--text-dark); opacity: 0.7;">Emergency Assistance & Resource Coordination</p>
+        </div>
+
+        <!-- Victim Response Section -->
+        <div class="response-card"
+          style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border-radius: 16px; padding: 2rem; box-shadow: var(--shadow-lg); border: 1px solid rgba(15, 117, 188, 0.1);">
+
+          <!-- Location -->
+          <div class="form-group" style="margin-bottom: 2rem;">
+            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-dark);"><i
+                class="ph-map-pin"></i> Current Location</label>
+            <div id="pd-location-display"
+              style="padding: 1rem; background: rgba(0,0,0,0.05); border-radius: 8px; margin-bottom: 1rem; font-family: monospace; color: var(--text-dark);">
+              Waiting for location...
+            </div>
+            <button onclick="detectPostDisasterLocation()" class="cta-btn-secondary"
+              style="background: var(--primary-color); color: white; width: 100%; border: none; padding: 0.8rem; border-radius: 8px; cursor: pointer;">
+              <i class="ph-crosshair"></i> Detect My Location
+            </button>
+          </div>
+
+          <hr style="border: 0; height: 1px; background: rgba(0,0,0,0.1); margin: 2rem 0;">
+
+          <!-- Severity -->
+          <div class="form-group" style="margin-bottom: 2rem;">
+            <label style="display: block; font-weight: 600; margin-bottom: 1rem; color: var(--text-dark);"><i
+                class="ph-warning"></i> Incident Severity</label>
+            <div style="display: flex; gap: 1rem; justify-content: space-between; flex-wrap: wrap;">
+              <label style="flex: 1; min-width: 100px; cursor: pointer;">
+                <input type="radio" name="pd-severity" value="low" style="display: none;"
+                  onchange="updateSeverityUI(this)">
+                <div class="severity-box low"
+                  style="padding: 1rem; border: 2px solid #2ECC71; border-radius: 8px; text-align: center; color: #2ECC71; font-weight: bold; transition: all 0.3s;">
+                  Low
+                </div>
+              </label>
+              <label style="flex: 1; min-width: 100px; cursor: pointer;">
+                <input type="radio" name="pd-severity" value="medium" style="display: none;"
+                  onchange="updateSeverityUI(this)">
+                <div class="severity-box medium"
+                  style="padding: 1rem; border: 2px solid #F39C12; border-radius: 8px; text-align: center; color: #F39C12; font-weight: bold; transition: all 0.3s;">
+                  Medium
+                </div>
+              </label>
+              <label style="flex: 1; min-width: 100px; cursor: pointer;">
+                <input type="radio" name="pd-severity" value="high" style="display: none;"
+                  onchange="updateSeverityUI(this)">
+                <div class="severity-box high"
+                  style="padding: 1rem; border: 2px solid #E74C3C; border-radius: 8px; text-align: center; color: #E74C3C; font-weight: bold; transition: all 0.3s;">
+                  High
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Resources Needed -->
+          <div class="form-group" style="margin-bottom: 2rem;">
+            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-dark);"><i
+                class="ph-first-aid-kit"></i> Resources Needed</label>
+            <textarea id="pd-resource-input" placeholder="Describe what you need (e.g., Water, Medical Kit, Food)..."
+              style="width: 100%; padding: 1rem; border-radius: 8px; border: 1px solid #ccc; min-height: 120px; font-family: inherit; margin-bottom: 1rem;"></textarea>
+
+            <div style="text-align: center;">
+              <button id="pd-record-btn" onmousedown="startPDRecording()" onmouseup="stopPDRecording()"
+                onmouseleave="stopPDRecording()"
+                style="background: #f1c40f; color: #333; border: none; padding: 1rem 2rem; border-radius: 50px; font-weight: bold; cursor: pointer; transition: all 0.3s; display: inline-flex; align-items: center; gap: 0.5rem;">
+                <i class="ph-microphone"></i> <span id="pd-record-text">Hold to Voice Note</span>
+              </button>
+            </div>
+          </div>
+
+          <hr style="border: 0; height: 1px; background: rgba(0,0,0,0.1); margin: 2rem 0;">
+
+          <!-- Cannot Speak / SOS -->
+          <div class="form-group"
+            style="margin-bottom: 1rem; background: rgba(231, 76, 60, 0.05); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(231, 76, 60, 0.2);">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+              <label style="font-weight: 700; color: #c0392b; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="ph-speaker-slash"></i> I Cannot Speak
+              </label>
+              <label class="switch" style="position: relative; display: inline-block; width: 60px; height: 34px;">
+                <input type="checkbox" id="pd-cant-speak-toggle" onchange="togglePDSOS()">
+                <span class="slider round"
+                  style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px;"></span>
+                <span class="slider-before"
+                  style="position: absolute; content: ''; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%;"></span>
+              </label>
+            </div>
+          </div>
+          
+          <!-- Cluster Protocol Info -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; background: rgba(5, 17, 26, 0.03); padding: 10px; border-radius: 8px;">
+             <button onclick="openClusterModal()" style="background: none; border: 1px solid #05111a; padding: 0.5rem 1rem; border-radius: 20px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: #05111a;">
+                <i class="ph-share-network"></i> Cluster Protocol
+             </button>
+             <div id="network-status-badge" style="background: #e8f5e9; color: #2e7d32; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 600; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem; transition: all 0.5s;">
+                <span class="status-dot" style="height: 10px; width: 10px; background-color: #2e7d32; border-radius: 50%; display: inline-block;"></span> 
+                Online
+             </div>
+          </div>
+              <style>
+                .slider.round:before {
+                  position: absolute;
+                  content: "";
+                  height: 26px;
+                  width: 26px;
+                  left: 4px;
+                  bottom: 4px;
+                  background-color: white;
+                  transition: .4s;
+                  border-radius: 50%;
+                }
+
+                input:checked+.slider {
+                  background-color: #E74C3C;
+                }
+
+                input:checked+.slider:before {
+                  transform: translateX(26px);
+                }
+              </style>
+            </div>
+
+            <div id="pd-sos-container" style="display: none; text-align: center; animation: fadeIn 0.5s;">
+              <button onclick="sendPDSOS()"
+                style="width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle, #ff5252 0%, #b71c1c 100%); border: 4px solid #fff; color: white; font-weight: 900; font-size: 2rem; cursor: pointer; box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); animation: sosPulse 1.5s infinite;">
+                SOS
+              </button>
+              <p style="margin-top: 1rem; font-weight: bold; color: #c0392b;">Emergency Signal</p>
+            </div>
+            <style>
+              @keyframes sosPulse {
+                0% {
+                  transform: scale(0.95);
+                  box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7);
+                }
+
+                70% {
+                  transform: scale(1);
+                  box-shadow: 0 0 0 20px rgba(231, 76, 60, 0);
+                }
+
+                100% {
+                  transform: scale(0.95);
+                  box-shadow: 0 0 0 0 rgba(231, 76, 60, 0);
+                }
+              }
+            </style>
+          </div>
+
+          <!-- Submit -->
+          <button onclick="submitPDResponse()" class="cta-btn-primary"
+            style="width: 100%; padding: 1rem; font-size: 1.1rem; justify-content: center; margin-top: 1rem;">
+            Submit Request <i class="ph-paper-plane-right"></i>
+          </button>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Incoming Incidents Content (Admin Only) -->
+    <div id="incidents-content" class="content-section" style="padding: 4rem; max-width: 1200px; margin: 0 auto;">
+      <div class="content-header">
+        <h2 style="color: #c0392b; display: flex; align-items: center; gap: 0.8rem;">
+          <i class="ph-warning-octagon"></i> Incoming Incident Reports
+        </h2>
+        <div style="display: flex; gap: 1rem;">
+          <button onclick="renderIncidentsPage()" class="btn" style="background: #3498db;">
+            <i class="ph-arrows-clockwise"></i> Refresh
+          </button>
+          <button onclick="clearAdminReports()" class="btn" style="background: #e74c3c;">
+            <i class="ph-archive"></i> Archive All
+          </button>
+        </div>
+      </div>
+
+      <div
+        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        <!-- Stats Cards -->
+        <div class="stat-card"
+          style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-left: 5px solid #e74c3c;">
+          <h3 style="color: #7f8c8d; font-size: 0.9em; margin-bottom: 0.5rem;">Total Incidents</h3>
+          <span id="incidents-total" style="font-size: 2rem; font-weight: 800; color: #2c3e50;">--</span>
+        </div>
+        <div class="stat-card"
+          style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-left: 5px solid #c0392b;">
+          <h3 style="color: #7f8c8d; font-size: 0.9em; margin-bottom: 0.5rem;">SOS Signals</h3>
+          <span id="incidents-sos" style="font-size: 2rem; font-weight: 800; color: #c0392b;">--</span>
+        </div>
+        <div class="stat-card"
+          style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-left: 5px solid #f39c12;">
+          <h3 style="color: #7f8c8d; font-size: 0.9em; margin-bottom: 0.5rem;">Pending Response</h3>
+          <span id="incidents-pending" style="font-size: 2rem; font-weight: 800; color: #f39c12;">--</span>
+        </div>
+      </div>
+
+      <!-- Incident List -->
+      <div id="incidents-list-container" style="display: grid; gap: 1rem;">
+        <!-- Dynamic Content -->
+        <div style="text-align: center; padding: 5rem; color: #95a5a6;">
+          <i class="ph-spinner ph-spin" style="font-size: 2rem;"></i>
+          <p>Loading incident data...</p>
+        </div>
+      </div>
+    </div>
+
     <!-- About Content -->
     <div id="about-content" class="content-section">
       <div class="about-container">
@@ -1439,8 +1655,77 @@
   </div>
   </div>
 
+  <!-- CLUSTER PROTOCOL MODAL -->
+  <div id="cluster-modal" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(5px); animation: fadeIn 0.3s;">
+    <div style="background-color: #fefefe; margin: 5% auto; padding: 0; border: 1px solid #888; width: 90%; max-width: 600px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); overflow: hidden; animation: slideUp 0.4s;">
+      
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, #05111a 0%, #1a3c5a 100%); padding: 1.5rem; color: white; display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="margin: 0; font-size: 1.4rem; display: flex; align-items: center; gap: 0.8rem;">
+          <i class="ph-share-network" style="font-size: 1.8rem; color: #3498db;"></i> 
+          <span>Cluster Protocol <span style="font-size: 0.8rem; opacity: 0.8; font-weight: 400; display: block;">Resilient Mesh Networking</span></span>
+        </h2>
+        <span onclick="closeClusterModal()" style="color: rgba(255,255,255,0.7); font-size: 2rem; font-weight: bold; cursor: pointer; line-height: 1; transition: color 0.2s;">&times;</span>
+      </div>
+
+      <!-- Body -->
+      <div style="padding: 2rem; color: #333;">
+        <div style="background: #e3f2fd; border-left: 4px solid #2196f3; padding: 1rem; border-radius: 4px; margin-bottom: 2rem; font-size: 0.95rem;">
+          <i class="ph-info"></i> When disaster strikes and internet fails, AgriUrbanAI switches to <strong>Emergency Cluster Mode</strong> to keep you connected locally.
+        </div>
+
+        <div class="step-item" style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+          <div style="width: 40px; height: 40px; background: #e8f5e9; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #2e7d32; font-weight: bold; flex-shrink: 0;">1</div>
+          <div>
+            <h4 style="margin: 0 0 0.3rem 0; color: #05111a;">Disaster Detection</h4>
+            <p style="margin: 0; font-size: 0.9rem; color: #666;">App automatically detects connection loss and switches to Emergency Mode.</p>
+          </div>
+        </div>
+
+        <div class="step-item" style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+          <div style="width: 40px; height: 40px; background: #e3f2fd; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #1976d2; font-weight: bold; flex-shrink: 0;">2</div>
+          <div>
+            <h4 style="margin: 0 0 0.3rem 0; color: #05111a;">Mesh Formation</h4>
+            <p style="margin: 0; font-size: 0.9rem; color: #666;">Phones connect locally via Bluetooth & Wi-Fi Direct. No internet needed.</p>
+          </div>
+        </div>
+
+        <div class="step-item" style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+          <div style="width: 40px; height: 40px; background: #fff3e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ef6c00; font-weight: bold; flex-shrink: 0;">3</div>
+          <div>
+            <h4 style="margin: 0 0 0.3rem 0; color: #05111a;">Head Election</h4>
+            <p style="margin: 0; font-size: 0.9rem; color: #666;">Device with best battery/signal is elected as local server (Head).</p>
+          </div>
+        </div>
+
+        <div class="step-item" style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+          <div style="width: 40px; height: 40px; background: #fce4ec; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #c2185b; font-weight: bold; flex-shrink: 0;">4</div>
+          <div>
+            <h4 style="margin: 0 0 0.3rem 0; color: #05111a;">Local Data Flow</h4>
+            <p style="margin: 0; font-size: 0.9rem; color: #666;">Send SOS, Status, and Location within your local group instantly.</p>
+          </div>
+        </div>
+
+        <div class="step-item" style="display: flex; gap: 1rem; margin-bottom: 0;">
+          <div style="width: 40px; height: 40px; background: #f3e5f5; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #7b1fa2; font-weight: bold; flex-shrink: 0;">5</div>
+          <div>
+            <h4 style="margin: 0 0 0.3rem 0; color: #05111a;">Central Sync</h4>
+            <p style="margin: 0; font-size: 0.9rem; color: #666;">Once ANY phone regains signal, all cluster data syncs to Admin Dashboard.</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Footer -->
+      <div style="padding: 1rem 2rem 2rem 2rem; text-align: right;">
+        <button onclick="closeClusterModal()" style="background: #05111a; color: white; border: none; padding: 0.8rem 2rem; border-radius: 6px; cursor: pointer; font-weight: 600;">Got it</button>
+      </div>
+
+    </div>
+  </div>
+
   <!-- Scripts -->
-  <script src="dashboard.js?v=2"></script>
+  <script src="dashboard.js?v=8"></script>
   <script src="loginAU.js"></script>
 
   <script>

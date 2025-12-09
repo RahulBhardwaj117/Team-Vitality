@@ -14,15 +14,20 @@ const protect = async (req, res, next) => {
   // Check for token in headers
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
+    console.log(`🔍 Auth Debug: Token extracted from header: "${token}"`);
+  } else {
+      console.log("🔍 Auth Debug: No Bearer token found in headers. Headers:", req.headers);
   }
 
   // Check for token in cookies (for web clients)
   if (!token && req.cookies && req.cookies.token) {
     token = req.cookies.token;
+    console.log("🔍 Auth Debug: Token extracted from cookies");
   }
 
   // Make sure token exists
   if (!token) {
+    console.log("❌ Auth Debug: Token is missing after checks.");
     return res.status(401).json({
       success: false,
       error: 'Not authorized to access this resource'

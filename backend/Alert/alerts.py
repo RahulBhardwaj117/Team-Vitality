@@ -28,8 +28,6 @@ DEFAULT_USERS= [
      "language": "kn"},
      {"name": "Mihir Sinha", "phone":"+918882429871",
      "language": "hi"},
-     {"name": "Sakshi Sharma", "phone":"+917303305787",
-     "language": "en"},
      {"name": "Sambhawna Bajpei", "phone":"+918368160206",
      "language": "kn"}
 ]
@@ -141,4 +139,31 @@ def trigger_alerts(risk, temp, rainfall, users=None):
         
         results.append({"user": u.get("name", "Unknown"), "status": "queued"})
     
-    return {"status": "processed", "details": results}
+    return {"status": "processed", "risk": risk, "details": results}
+
+if __name__ == "__main__":
+    import random
+    import sys
+    import json
+
+    # Simple logic to run this script from Node.js
+    risks = ['heatwave', 'flood', 'drought']
+    selected_risk = random.choice(risks)
+    
+    # Mock data for demonstration
+    mock_values = {
+        'heatwave': {'temp': 45.0, 'rain': 0.0},
+        'flood': {'temp': 26.0, 'rain': 250.0},
+        'drought': {'temp': 38.0, 'rain': 5.0}
+    }
+    
+    vals = mock_values[selected_risk]
+    
+    # Send logs to stderr so they don't corrupt stdout JSON
+    sys.stderr.write(f"DTO: Triggering {selected_risk} alert...\n")
+    
+    # Call the main function
+    res = trigger_alerts(selected_risk, vals['temp'], vals['rain'])
+    
+    # Print ONLY the JSON result to stdout
+    print(json.dumps(res))

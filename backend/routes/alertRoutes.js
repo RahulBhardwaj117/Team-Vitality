@@ -13,11 +13,17 @@ const {
   updateAlert,
   deleteAlert,
   markAlertAsRead,
-  getUserAlerts
+  getUserAlerts,
+  triggerEmergencyAlert
 } = require('../controllers/alertController');
 
 // All routes require authentication
 router.use(protect);
+
+// @route   POST /api/alerts/trigger
+// @desc    Trigger emergency alert script
+// @access  Private (Admin, Urban, Farmer)
+router.post('/trigger', triggerEmergencyAlert);
 
 // @route   GET /api/alerts
 // @desc    Get all alerts (admin/urban)

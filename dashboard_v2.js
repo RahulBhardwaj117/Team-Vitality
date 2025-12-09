@@ -5,9 +5,8 @@
 // --- WEATHER DATA MANAGEMENT ---
 let weatherData = [];
 
-// Check if we're in Electron environment with database
-const isElectron = window.desktopUtils && window.desktopUtils.isElectron;
-const dbAPI = isElectron && window.databaseAPI ? window.databaseAPI : null;
+// Weather Data Management
+
 
 // Default weather data as fallback
 const defaultWeatherData = [

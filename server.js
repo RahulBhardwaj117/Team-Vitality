@@ -194,6 +194,60 @@ app.get('/api/analytics/crop-health', auth, (req, res) => {
   });
 });
 
+// Disaster Report Routes
+app.post('/api/disaster-reports', async (req, res) => {
+  try {
+    const reportData = req.body;
+    
+    // Validate required fields (basic validation)
+    if (!reportData.severity && !reportData.resources && !reportData.sos) {
+       return res.status(400).json({ success: false, error: 'Missing report details' });
+    }
+
+    const reportId = await db.createDisasterReport(reportData);
+    
+    res.json({
+      success: true,
+      message: 'Report submitted successfully',
+      reportId: reportId
+    });
+  } catch (error) {
+    console.error('Error submitting disaster report:', error);
+    res.status(500).json({ success: false, error: 'Failed to submit report' });
+  }
+});
+
+app.get('/api/disaster-reports', auth, async (req, res) => {
+  try {
+    const reports = await db.getActiveDisasterReports();
+    res.json({
+      success: true,
+      data: reports
+    });
+  } catch (error) {
+    console.error('Error fetching disaster reports:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch reports' });
+  }
+});
+
+app.post('/api/disaster-reports/archive', auth, async (req, res) => {
+  try {
+    // Optional: Check if user is admin
+    if (req.user.role !== 'admin' && req.user.role !== 'demo') { // Allowing demo for testing
+         return res.status(403).json({ success: false, error: 'Unauthorized' });
+    }
+
+    await db.archiveAllDisasterReports();
+    res.json({
+      success: true,
+      message: 'All reports archived'
+    });
+  } catch (error) {
+    console.error('Error archiving reports:', error);
+    res.status(500).json({ success: false, error: 'Failed to archive reports' });
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {

@@ -1,82 +1,48 @@
 (function() {
-  // Check if we're in Electron environment
-  const isElectron = window.desktopUtils && window.desktopUtils.isElectron;
-
-  // Use database API if available, fallback to demo credentials for web
-  let dbAPI = null;
-  let DEMO_USERS = [];
-
-  // Demo credentials are available in the console for development
-  console.log('Demo Credentials:');
-  console.log('Demo: demo@demo.com / demo');
+  // API Base URL
+  const API_URL = 'http://localhost:5000/api';
 
   // Always allow demo users as fallback
-  DEMO_USERS = [
+  const DEMO_USERS = [
     { email: "farmer@demo.com", password: "demo", role: "farmer" },
     { email: "urban@demo.com", password: "demo", role: "urban" },
     { email: "admin@demo.com", password: "demo", role: "admin" }
   ];
-
-  if (isElectron && window.databaseAPI) {
-    dbAPI = window.databaseAPI;
-  }
-
-  // API Base URL
-  const API_URL = 'http://localhost:5000/api';
 
   // Authenticate user using backend API
   async function authenticateUser(email, password) {
     try {
       let user = null;
 
-      // 1. Try Local Database (if available)
-      if (dbAPI) {
-        try {
-          user = await dbAPI.authenticateUser(email, password);
-          if (user) {
-            console.log('Logged in via Local Database');
-          }
-        } catch (err) {
-          console.warn('Local Database auth failed:', err);
+      // 1. Try Backend API
+      console.log('Trying Backend API...');
+      try {
+        const response = await fetch(`${API_URL}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+        if (response.ok && data.success) {
+          // The API returns 'user' object directly, not inside 'data'
+          user = { ...data.user, token: data.token };
+          console.log('Logged in via Backend API');
+        } else {
+          console.error('API Login failed:', data.error);
         }
+      } catch (apiErr) {
+        console.error('API unreachable:', apiErr);
+        // Don't throw here, let it fall through to demo check
       }
 
-      // 2. If not found in Local DB, try Backend API (ONLY IF LOCAL)
-      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      
-      if (!user && isLocal) {
-        console.log('User not found in local DB, trying Backend API...');
-        try {
-          const response = await fetch(`${API_URL}/auth/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password }),
-            signal: AbortSignal.timeout(3000) // Fast timeout for local
-          });
-
-          const data = await response.json();
-          if (response.ok && data.success) {
-            // The API returns 'user' object directly, not inside 'data'
-            user = { ...data.user, token: data.token };
-            console.log('Logged in via Backend API');
-          } else {
-            console.error('API Login failed:', data.error);
-          }
-        } catch (apiErr) {
-          console.warn('API unreachable, falling back to demo:', apiErr);
-          // Do NOT throw here, so we can fall through to Demo Users
-        }
-      } else if (!user) {
-        console.log('Non-local environment or API skipped. Checking demo credentials...');
-      }
-
-      // 3. If still not found, try Demo Credentials (Fallback)
+      // 2. If still not found, try Demo Credentials (Fallback)
       if (!user) {
         user = DEMO_USERS.find(u => u.email === email && u.password === password);
         if (user) console.warn('Using Demo Credentials');
       }
 
-      // 4. Final Success Check
+      // 3. Final Success Check
       if (user) {
         localStorage.setItem('user', JSON.stringify({
           ...user,
@@ -85,10 +51,6 @@
         return true;
       }
 
-      // If we reached here, and we tried API but it failed, we might want to return that error
-      // But for now, if no user found, it's invalid credentials OR server issue.
-      // Let's check if we had a server error.
-      
       return false;
 
     } catch (error) {
@@ -128,10 +90,8 @@
           const errorMsg = document.createElement('div');
           errorMsg.className = 'error-message';
           
-          // Check if it was a connection error (success is false, but could be specific error string if we changed authenticateUser return type)
-          // For now, let's just use a generic message or the one passed back if we refactor authenticateUser
           if (typeof success === 'string') {
-             errorMsg.textContent = success; // Display specific error like "Server unreachable"
+             errorMsg.textContent = success;
           } else {
              errorMsg.textContent = 'Invalid credentials. Please try again.';
           }
