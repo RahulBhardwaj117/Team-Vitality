@@ -41,14 +41,17 @@
         }
       }
 
-      // 2. If not found in Local DB, try Backend API
-      if (!user) {
+      // 2. If not found in Local DB, try Backend API (ONLY IF LOCAL)
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      
+      if (!user && isLocal) {
         console.log('User not found in local DB, trying Backend API...');
         try {
           const response = await fetch(`${API_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
+            body: JSON.stringify({ email, password }),
+            signal: AbortSignal.timeout(3000) // Fast timeout for local
           });
 
           const data = await response.json();
@@ -60,10 +63,11 @@
             console.error('API Login failed:', data.error);
           }
         } catch (apiErr) {
-          console.error('API unreachable:', apiErr);
-          // Throw to outer catch to return specific error message
-          throw new Error("API unreachable");
+          console.warn('API unreachable, falling back to demo:', apiErr);
+          // Do NOT throw here, so we can fall through to Demo Users
         }
+      } else if (!user) {
+        console.log('Non-local environment or API skipped. Checking demo credentials...');
       }
 
       // 3. If still not found, try Demo Credentials (Fallback)

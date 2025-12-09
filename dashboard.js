@@ -54,6 +54,22 @@ const delay = ms => new Promise(res => setTimeout(res, ms));
 async function loadWeatherData() {
   const maxRetries = 3;
   let attempts = 0;
+  
+  // Check if running on localhost
+  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+  if (!isLocal) {
+    console.log('🌍 Non-local environment detected. Skipping backend API checks and using demo data.');
+    // Fallback directly
+    weatherData = generateDefaultForecast();
+    localStorage.setItem('agriurban_weather_forecast', JSON.stringify({
+      data: weatherData,
+      timestamp: Date.now(),
+      location: currentUser?.location || 'Gautam Buddha Nagar',
+      source: 'GENERATED_DEFAULT'
+    }));
+    return;
+  }
 
   while (attempts < maxRetries) {
     try {
@@ -757,19 +773,21 @@ async function initializePrediction() {
 
     // ==================== PARALLEL API CALLS ====================
     // We run all predictions in parallel to avoid "flickering" or sequential updates in the UI
-    const floodPromise = fetch(`${FASTAPI_URL}/predict/flood/integrated`, {
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+    const floodPromise = (!isLocal) ? Promise.reject("Demo Mode - API Skipped") : fetch(`${FASTAPI_URL}/predict/flood/integrated`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     }).then(res => res.ok ? res.json() : Promise.reject(res.statusText));
 
-    const heatwavePromise = fetch(`${FASTAPI_URL}/predict/heatwave/integrated`, {
+    const heatwavePromise = (!isLocal) ? Promise.reject("Demo Mode - API Skipped") : fetch(`${FASTAPI_URL}/predict/heatwave/integrated`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     }).then(res => res.ok ? res.json() : Promise.reject(res.statusText));
 
-    const droughtPromise = fetch(`${FASTAPI_URL}/predict/drought/integrated`, {
+    const droughtPromise = (!isLocal) ? Promise.reject("Demo Mode - API Skipped") : fetch(`${FASTAPI_URL}/predict/drought/integrated`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
