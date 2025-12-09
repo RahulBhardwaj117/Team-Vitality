@@ -20,6 +20,20 @@
   <!-- Favicon -->
   <link rel="icon" type="image/x-icon"
     href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌾</text></svg>">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#667eea">
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(registration => {
+            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+          }, err => {
+            console.log('ServiceWorker registration failed: ', err);
+          });
+      });
+    }
+  </script>
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1021,7 +1035,10 @@
       <div class="nav-logo">
         <span class="logo-text">AgriUrbanAI</span>
       </div>
-      <div class="nav-menu">
+      <button class="mobile-menu-btn" id="mobile-menu-toggle">
+        <i class="ph ph-list"></i>
+      </button>
+      <div class="nav-menu" id="nav-menu">
         <a href="#dashboard" class="nav-item active">
           <i class="ph-squares-four"></i>
           <span>Dashboard</span>

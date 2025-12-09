@@ -1511,7 +1511,7 @@ body::before {
 
 /* Map Section Redesign */
 .dashboard-panel.map-section {
-  padding: 1.5rem;
+  padding: 2.5rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -2129,5 +2129,206 @@ body::before {
 
 body.dark-mode .confidence-indicator {
   background: rgba(255,255,255,0.1);
+}
+
+
+/* ============================================
+   RESPONSIVE NAVIGATION & LAYOUT
+   ============================================ */
+
+/* Mobile Menu Button - Hidden on Desktop */
+.mobile-menu-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--text-dark);
+  font-size: 1.5rem;
+  cursor: pointer;
+  z-index: 2001;
+  padding: 0.5rem;
+  margin-right: 0.5rem;
+}
+
+[data-theme='dark'] .mobile-menu-btn {
+  color: var(--text-light);
+}
+
+@media (max-width: 768px) {
+  /* Navbar Adjustments */
+  .navbar {
+    padding: 0 1rem;
+    height: 60px;
+    justify-content: flex-start; /* Logo left, btn next to it or spaced */
+    top: 0;
+    left: 0;
+    width: 100%;
+    transform: none;
+    border-radius: 0;
+    max-width: none;
+    background: rgba(255, 255, 255, 0.98); /* Less transperant on mobile */
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    display: flex; /* Ensure it is visible */
+    z-index: 2005; /* Highest level */
+  }
+  
+  .nav-logo {
+      margin-right: auto; /* Push logo to left */
+  }
+
+  .mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    order: -1; /* Button first (left) or last (right)? Usually hamburger is left or right. Left is common for drawers. Let's put it left. */
+    margin-right: 10px;
+  }
+  
+  /* If we want hamburger on right:
+  .mobile-menu-btn { order: 2; margin-left: auto; margin-right: 0; }
+  .nav-logo { margin-right: 0; }
+  */
+  
+  /* Let's go with Hamburger Right for standard feel */
+   .nav-logo {
+       margin-right: auto;
+       margin-left: 0;
+   }
+   .mobile-menu-btn {
+       display: flex;
+       order: 2;
+       margin-left: auto; /* Push to right */
+       width: 44px;
+       height: 44px;
+       justify-content: center;
+       align-items: center;
+       border-radius: 8px;
+       background: transparent; /* or rgba(0,0,0,0.05) */
+   }
+   
+   .mobile-menu-btn i {
+       font-size: 1.8rem; /* Make it large */
+       color: var(--primary-color);
+   }
+
+   .nav-menu {
+       z-index: 1000; /* Ensure it's above other content but below navbar if needed, or handle stacking */
+   }
+
+  .nav-right {
+    display: none; /* Hide live badge on very small screens or move it */
+  }
+
+  /* Mobile Navigation Drawer */
+  .nav-menu {
+    position: fixed;
+    top: 60px; /* Below navbar */
+    left: 0;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(20px);
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1.5rem;
+    gap: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    transform: translateY(-150%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1999;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    display: flex; /* Override any previous display:none */
+  }
+
+  [data-theme='dark'] .nav-menu {
+    background: rgba(26, 32, 44, 0.98);
+  }
+
+  .nav-menu.active {
+    transform: translateY(0);
+  }
+
+  .nav-item {
+    width: 100%;
+    padding: 1rem;
+    border-radius: 12px;
+    justify-content: flex-start;
+    font-size: 1.1rem;
+    background: rgba(0,0,0,0.03);
+  }
+  
+  [data-theme='dark'] .nav-item {
+      background: rgba(255,255,255,0.05);
+  }
+
+  /* Dashboard Layout Stacking */
+  .container {
+    flex-direction: column;
+    height: auto !important; /* Override 100vh */
+    margin-top: 70px;
+    width: 100%;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: visible;
+    padding-bottom: 2rem;
+  }
+
+  /* Controls Panel (Top on mobile) */
+  .controls-panel {
+    width: 100%;
+    height: auto;
+    max-height: none;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem;
+    overflow: visible;
+  }
+
+  /* Dashboard Panel (Details/Map) */
+  .dashboard-panel {
+    height: auto;
+    overflow: visible;
+    padding-bottom: 20px;
+  }
+  
+  .dashboard-panel.map-section {
+      padding: 1.5rem;
+  }
+
+  /* Maps & Cards */
+  #map {
+    height: 350px !important; /* Ensure map has height */
+    border-radius: 12px;
+  }
+
+  .map-container {
+      min-height: 350px;
+  }
+
+  .chart-container {
+    height: 250px;
+  }
+  
+  /* Forecast Data Scroll settings */
+  #forecast-data {
+      max-height: none; /* Show full list or generic scroll */
+      overflow-y: visible;
+      display: flex;
+      flex-direction: row; /* Horizontal scroll for forecast? or Vertical stack? Vertical stack is better for list */
+      flex-direction: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); /* Grid for forecast cards */
+  }
+  
+  .logo h1 {
+    font-size: 1.5rem;
+  }
+  
+  /* Prediction Cards Stacking */
+  .prediction-grid {
+      grid-template-columns: 1fr; /* Single column */
+  }
+  
+  /* Analytics Grid */
+  .analytics-grid {
+      grid-template-columns: 1fr;
+  }
 }
 
