@@ -1,0 +1,11 @@
+{
+  "appId": "com.agriurbanai.app",
+  "appName": "AgriUrbanAI",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": true
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}

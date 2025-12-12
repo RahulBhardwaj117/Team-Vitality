@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">AgriUrbanAI</string>
+    <string name="title_activity_main">AgriUrbanAI</string>
+    <string name="package_name">com.agriurbanai.app</string>
+    <string name="custom_url_scheme">com.agriurbanai.app</string>
+</resources>
