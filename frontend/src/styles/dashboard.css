@@ -2363,7 +2363,6 @@ body.dark-mode .confidence-indicator {
 #dashboard-section {
   height: 100vh;
   overflow: hidden;
-  position: relative;
 }
 
 #dashboard-section .container {

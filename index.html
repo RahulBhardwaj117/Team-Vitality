@@ -442,6 +442,12 @@
       display: block;
     }
 
+    #incidents-content.active {
+      display: flex !important;
+      flex-direction: column;
+      align-items: center;
+    }
+
     /* Add top padding to content containers to account for fixed navbar */
     .analytics-container,
     .alerts-container,
@@ -1534,13 +1540,11 @@
       </button>
     </div>
   </div>
-  </div>
 
 
 
   <!-- Incoming Incidents Content (Admin Only) -->
-  <div id="incidents-content" class="content-section"
-    style="padding: 4rem 2rem; max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; align-items: center;">
+  <div id="incidents-content" class="content-section" style="padding: 4rem 2rem; max-width: 1200px; margin: 0 auto;">
     <div class="content-header" style="width: 100%; margin-bottom: 2rem;">
       <h2 style="color: #c0392b; display: flex; align-items: center; gap: 0.8rem;">
         <i class="ph-warning-octagon"></i> Incoming Incident Reports
@@ -1639,7 +1643,6 @@
         </div>
       </div>
     </div>
-  </div>
   </div>
   </div>
 
