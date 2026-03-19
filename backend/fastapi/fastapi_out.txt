@@ -1,0 +1,3 @@
+Loading models and data...
+Error loading flood model artifacts: No module named 'numpy._core'
+Please ensure C:\Users\sambh\.vscode\Team-Vitality\backend\fastapi\predictions\flood_xgboost_balanced.pkl, C:\Users\sambh\.vscode\Team-Vitality\backend\fastapi\predictions\flood_scaler_balanced.pkl, and C:\Users\sambh\.vscode\Team-Vitality\backend\fastapi\predictions\flood_features_balanced.json exist.

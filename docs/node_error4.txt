@@ -1,0 +1,9 @@
+[dotenv@17.2.3] injecting env (7) from backend\env.env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
+Attempting to connect to MongoDB at: mongodb+srv://SampleUser1:****@agriurbanai.s8ohe5i.mongodb.net/?appName=AgriUrbanAi
+🚀 AgriUrbanAI Backend Server running on port 5000
+📱 Health check: http://localhost:5000/health
+🗄️  Database Status: Connecting...
+❌ MongoDB connection error: querySrv ENOTFOUND _mongodb._tcp.agriurbanai.s8ohe5i.mongodb.net
+Please check your internet connection and ensure your IP is whitelisted in MongoDB Atlas.
+^C
