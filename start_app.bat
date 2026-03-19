@@ -1,4 +1,3 @@
-
 @echo off
 echo ===================================================
 echo   AgriUrbanAI - All-in-One Startup Script
@@ -13,19 +12,23 @@ if %errorlevel% neq 0 (
     exit /b
 )
 
-:: 2. Start Backend Server
+:: 2. Start Python Backend Server (FastAPI)
 echo [INFO] Starting Backend Server (FastAPI)...
-start "AgriUrbanAI Backend" cmd /k "cd /d d:\Python\change5\TeamVitality\AU\backend\fastapi && python main.py"
+start "AgriUrbanAI FastAPI Backend" cmd /k "cd /d ""%~dp0backend\fastapi"" && python main.py"
 
-:: 3. Launch Frontend
+:: 3. Start Node Backend Server
+echo [INFO] Starting Node Backend Server...
+start "AgriUrbanAI Node Backend" cmd /k "cd /d ""%~dp0backend"" && npm start"
+
+:: 4. Launch Frontend
 echo [INFO] Launching Dashboard...
-:: Wait a few seconds for backend to initialize
+:: Wait a few seconds for backends to initialize
 timeout /t 5 /nobreak >nul
-start "" "d:\Python\change5\TeamVitality\AU\index.html"
+start "" "%~dp0index.html"
 
 echo.
 echo [SUCCESS] System started! 
-echo - Backend running in new window
+echo - Backends running in new windows
 echo - Dashboard opened in browser
 echo.
 pause
