@@ -17,13 +17,13 @@ const {
   triggerEmergencyAlert
 } = require('../controllers/alertController');
 
-// All routes require authentication
-router.use(protect);
-
 // @route   POST /api/alerts/trigger
 // @desc    Trigger emergency alert script
-// @access  Private (Admin, Urban, Farmer)
+// @access  Public (for demo purposes)
 router.post('/trigger', triggerEmergencyAlert);
+
+// All routes require authentication
+router.use(protect);
 
 // @route   GET /api/alerts
 // @desc    Get all alerts (admin/urban)

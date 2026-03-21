@@ -89,25 +89,8 @@ const scheduleJobs = () => {
     timezone: 'Asia/Kolkata'
   });
 
-  // Weather data refresh every 30 minutes during monsoon season (June-September)
-  cron.schedule('*/30 * * 6-9 *', async () => {
-    try {
-      logger.info('Running monsoon season weather update...');
-      await updateWeatherData();
-    } catch (error) {
-      logger.error('Error in monsoon weather update:', error);
-    }
-  });
+  // Seasonal weather alerts disabled as per user request (manual only)
 
-  // Winter season special updates (December-February)
-  cron.schedule('*/60 * * 12-2 *', async () => {
-    try {
-      logger.info('Running winter season updates...');
-      await checkWinterConditions();
-    } catch (error) {
-      logger.error('Error in winter updates:', error);
-    }
-  });
 
   // Log rotation check daily at 1 AM
   cron.schedule('0 1 * * *', () => {

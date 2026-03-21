@@ -24,11 +24,10 @@ TWILIO_PHONE       = os.getenv("TWILIO_PHONE")
 # --------------------------------
 # In a real app, fetch this from your database
 DEFAULT_USERS= [
+    {"name": "User", "phone": "+917303305787", "language": "en"},
     {"name": "Rishabh Verma", "phone": "+919457829890", "language": "hi"},
-    {"name": "Rahul Bhardwaj", "phone":"+917307438928",
-     "language": "kn"},
-     {"name": "Sambhawna Bajpei", "phone":"+918368160206",
-     "language": "kn"}
+    {"name": "Rahul Bhardwaj", "phone":"+917307438928", "language": "kn"},
+    {"name": "Sambhawna Bajpei", "phone":"+918368160206", "language": "kn"}
 ]
 
 

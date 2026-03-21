@@ -160,9 +160,9 @@ def process_alerts():
 def start_scheduler():
     global scheduler
     scheduler = BackgroundScheduler()
-    scheduler.add_job(process_alerts, "interval", hours=6)
-    scheduler.start()
-    logger.info("Scheduler started (every 6 hours).")
+    # scheduler.add_job(process_alerts, "interval", hours=6)
+    # scheduler.start()
+    logger.info("❌ Scheduler disabled (Manual Mode only).")
 
 @app.on_event("shutdown")
 def stop_scheduler():
