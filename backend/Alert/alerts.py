@@ -10,7 +10,9 @@ from gemini_recommendation import get_recommendation
 # --------------------------------
 # CONFIG & LOGGING
 # --------------------------------
-load_dotenv()
+# Ensure we load .env from the backend root directory (one level up)
+env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+load_dotenv(env_path)
 logger = logging.getLogger("AgriUrban")
 
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
@@ -22,12 +24,9 @@ TWILIO_PHONE       = os.getenv("TWILIO_PHONE")
 # --------------------------------
 # In a real app, fetch this from your database
 DEFAULT_USERS= [
-    {"name": "Pramod Pandey", "phone": "+918858031887", "language": "en"},
     {"name": "Rishabh Verma", "phone": "+919457829890", "language": "hi"},
     {"name": "Rahul Bhardwaj", "phone":"+917307438928",
      "language": "kn"},
-     {"name": "Mihir Sinha", "phone":"+918882429871",
-     "language": "hi"},
      {"name": "Sambhawna Bajpei", "phone":"+918368160206",
      "language": "kn"}
 ]
