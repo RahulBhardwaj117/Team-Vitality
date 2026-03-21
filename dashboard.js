@@ -1035,48 +1035,102 @@ function initializeAlerts() {
   }
 }
 
-function renderAlertsHistory() {
+async function renderAlertsHistory() {
   const list = document.getElementById('alerts-list');
   if (!list) return;
 
-  const history = JSON.parse(localStorage.getItem('sentAlertHistory') || '[]');
+  // Show loading indicator
+  list.innerHTML = '<div style="text-align:center; padding:2rem; color:#888;"><i class="ph-spinner ph-spin"></i> Loading alert history...</div>';
 
-  if (history.length === 0) {
-    list.innerHTML = '<div style="text-align:center; padding:2rem; color:#888;">No alerts sent yet.</div>';
+  // Keep a copy of local history as fallback
+  let localHistory = JSON.parse(localStorage.getItem('sentAlertHistory') || '[]');
+  
+  // Try to fetch from backend
+  try {
+    const response = await fetch(`${API_URL}/alerts/user`, {
+      headers: {
+        'Authorization': `Bearer ${currentUser?.token || 'electron-user-demo'}`
+      }
+    });
+
+    if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data) {
+            // Transform backend alerts to match UI format
+            const backendAlerts = result.data.map(a => ({
+                risk: (a.type || 'weather').toLowerCase(),
+                user: a.priority === 'high' ? '⚠️ BROADCAST' : 'System',
+                phone: a.title,
+                time: a.createdAt || a.timestamp,
+                details: a.message,
+                dbid: a._id
+            }));
+
+            // Merge local and backend, removing duplicates
+            const combined = [...backendAlerts];
+            
+            // Add local ones that aren't in backend yet
+            localHistory.forEach(local => {
+                if (!combined.some(b => b.time === local.time || (b.details === local.details && Math.abs(new Date(b.time) - new Date(local.time)) < 5000))) {
+                    combined.push(local);
+                }
+            });
+
+            // Sort newest first
+            combined.sort((a, b) => new Date(b.time) - new Date(a.time));
+            localHistory = combined;
+        }
+    }
+  } catch (error) {
+    console.warn("Failed to fetch alerts from backend, showing local history only", error);
+  }
+
+  if (localHistory.length === 0) {
+    list.innerHTML = '<div style="text-align:center; padding:3rem; color:#888; background:#f9f9f9; border-radius:12px; border: 2px dashed #eee; margin:1rem;">' + 
+                     '<i class="ph-bell-slash" style="font-size:2rem; margin-bottom:1rem; display:block;"></i>' + 
+                     'No alerts sent yet. All clear!</div>';
     return;
   }
 
-  list.innerHTML = history.map(item => {
+  list.innerHTML = localHistory.map(item => {
     let icon = '📢';
-    let title = 'Alert';
+    let title = item.phone && item.phone !== 'Multiple' && item.phone !== 'Broadcast' ? item.phone : (item.risk === 'system' ? 'System Alert' : 'Alert');
     let className = 'weather-alert'; // default style
 
-    if (item.risk === 'heatwave') {
+    const risk = String(item.risk).toLowerCase();
+    if (risk === 'heatwave') {
       icon = '☀️';
       title = 'Heatwave Alert';
       className = 'hazard-alert';
-    } else if (item.risk === 'flood') {
+    } else if (risk === 'flood') {
       icon = '🌊';
       title = 'Flood Warning';
       className = 'weather-alert';
-    } else if (item.risk === 'drought') {
+    } else if (risk === 'drought') {
       icon = '🍂';
       title = 'Drought Alert';
       className = 'urban-alert';
+    } else if (risk === 'system') {
+      icon = '🛡️';
+      title = item.phone ||'Security Alert';
+      className = 'system-alert';
     }
 
     // Format time
-    const timeStr = new Date(item.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const dateStr = new Date(item.time).toLocaleDateString();
+    const dateObj = new Date(item.time);
+    const timeStr = isNaN(dateObj.getTime()) ? 'Recently' : dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const dateStr = isNaN(dateObj.getTime()) ? '' : dateObj.toLocaleDateString();
 
     return `
-      <div class="alert-item ${className}" style="border-left: 4px solid #E74C3C;">
-        <div class="alert-icon" style="font-size: 1.5rem;">${icon}</div>
+      <div class="alert-item ${className}" style="animation: slideIn 0.3s ease-out; margin-bottom: 1rem;">
+        <div class="alert-icon">${icon}</div>
         <div class="alert-content">
-          <h4 style="margin: 0 0 0.2rem 0; color: #333;">${title}</h4>
-          <p style="margin: 0; font-size: 0.9rem; color: #555;">To: <strong>${item.user || 'Unknown'}</strong> (${item.phone || 'N/A'})</p>
-          <div style="font-size: 0.8rem; color: #777; margin-top: 0.2rem;">${item.details}</div>
-          <span class="alert-time" style="font-size: 0.75rem; color: #999;">${dateStr} ${timeStr}</span>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+             <h4 style="margin: 0; color: #2c3e50;">${title}</h4>
+             <span class="alert-time">${dateStr} ${timeStr}</span>
+          </div>
+          <p style="margin: 0.3rem 0; font-size: 0.9rem; color: #555;">${item.details}</p>
+          <div style="font-size: 0.75rem; color: #999;">Reference: ${item.user || 'Unknown'}</div>
         </div>
       </div>
       `;

@@ -124,8 +124,8 @@ const demoDashboardData = {
       avgHumidity: 65,
       rainfall: 12,
       forecast: [
-        { day: "Today", condition: "Partly Cloudy", rain_chance: 10, temp: 32, icon: "☁️", humidity: 65, wind: 12 },
-        { day: "Tomorrow", condition: "Partly Cloudy", rain_chance: 25, temp: 32, icon: "🌤️", humidity: 70, wind: 15 },
+        { day: "Today", condition: "Partly Cloudy", rain_chance: 10, temp: 38, icon: "☁️", humidity: 65, wind: 12 },
+        { day: "Tomorrow", condition: "Partly Cloudy", rain_chance: 85, temp: 32, icon: "⛈️", humidity: 70, wind: 15 },
         { day: "Friday", condition: "Scattered T-Storms", rain_chance: 40, temp: 33, icon: "⛈️", humidity: 85, wind: 20 },
         { day: "Saturday", condition: "Sunny", rain_chance: 0, temp: 36, icon: "☀️", humidity: 45, wind: 10 },
         { day: "Sunday", condition: "Sunny", rain_chance: 0, temp: 36, icon: "☀️", humidity: 40, wind: 8 },
@@ -135,8 +135,9 @@ const demoDashboardData = {
     }
   },
   recentAlerts: [
-    { title: 'Heavy Rainfall Warning', message: '40% chance of thunderstorms tomorrow', type: 'weather', priority: 'high' },
-    { title: 'Crop Health Alert', message: 'Soil moisture levels dropping', type: 'crop', priority: 'medium' },
+    { title: 'Severe Heatwave', message: 'Temperature exceeding 38°C today. Stay hydrated.', type: 'weather', priority: 'high' },
+    { title: 'Heavy Rainfall Warning', message: '85% chance of thunderstorms tomorrow', type: 'weather', priority: 'high' },
+    { title: 'Crop Health Alert', message: 'Soil moisture levels dropping in South Sector', type: 'crop', priority: 'medium' },
     { title: 'Urban Flood Risk', message: 'Sector 18 underpass at high risk', type: 'urban', priority: 'high' }
   ],
   charts: {
@@ -192,6 +193,84 @@ app.get('/api/analytics/crop-health', auth, (req, res) => {
       }]
     }
   });
+});
+
+// Alert Routes
+app.post('/api/alerts/trigger', auth, async (req, res) => {
+  const { exec } = require('child_process');
+  const path = require('path');
+  
+  // Try to find alerts.py - check multiple locations for robustness
+  const locations = [
+    path.join(__dirname, 'backend', 'Alert', 'alerts.py'),
+    path.join(__dirname, 'backend', 'alerts.py'),
+    path.join(__dirname, 'Alert', 'alerts.py')
+  ];
+  
+  let scriptPath = '';
+  const fs = require('fs');
+  for (const loc of locations) {
+    if (fs.existsSync(loc)) {
+      scriptPath = loc;
+      break;
+    }
+  }
+
+  if (!scriptPath) {
+    console.error('❌ alert script NOT found in any location:', locations);
+    // Fallback if script missing: return simulated success for demo
+    return res.status(200).json({
+      success: true,
+      message: 'Demo mode: Alert script not found, simulating success.',
+      output: JSON.stringify({ status: 'processed', risk: 'flood', details: [{user: 'Demo User', status: 'queued'}] })
+    });
+  }
+
+  const scriptDir = path.dirname(scriptPath);
+  console.log(`Executing alert script: ${scriptPath}`);
+
+  exec(`python "${path.basename(scriptPath)}"`, { cwd: scriptDir }, async (error, stdout, stderr) => {
+    if (error) {
+      console.error(`exec error: ${error}`);
+      return res.status(500).json({ success: false, error: 'Failed to execute alert script', details: error.message });
+    }
+    
+    if (stderr) console.warn(`stderr: ${stderr}`);
+    
+    // Save to DB if possible
+    try {
+      const pyResult = JSON.parse(stdout);
+      await db.createAlert(req.userId || 'demo-user', {
+        title: `Emergency ${pyResult.risk || 'Alert'}`,
+        message: `Broadcast sent to ${pyResult.details ? pyResult.details.length : 0} recipients.`,
+        type: 'system',
+        priority: 'high',
+        risk_level: (pyResult.risk || 'high').charAt(0).toUpperCase() + (pyResult.risk || 'high').slice(1)
+      });
+    } catch(e) {
+      console.warn("Failed to parse script output or save to DB:", e);
+    }
+
+    res.json({
+      success: true,
+      message: 'Emergency alert sequence initiated.',
+      output: stdout
+    });
+  });
+});
+
+// Get user alerts
+app.get('/api/alerts/user', auth, async (req, res) => {
+  try {
+    const alerts = await db.getActiveAlerts(req.userId);
+    res.json({
+      success: true,
+      data: alerts
+    });
+  } catch (error) {
+    console.error('Error fetching alerts:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch alerts' });
+  }
 });
 
 // Disaster Report Routes
