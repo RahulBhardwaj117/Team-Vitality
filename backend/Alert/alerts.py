@@ -137,6 +137,9 @@ def trigger_alerts(risk, temp, rainfall, users=None):
         
         results.append({"user": u.get("name", "Unknown"), "status": "queued"})
     
+    # 3. Wait for all threads to finish
+    executor.shutdown(wait=True)
+    
     return {"status": "processed", "risk": risk, "details": results}
 
 if __name__ == "__main__":

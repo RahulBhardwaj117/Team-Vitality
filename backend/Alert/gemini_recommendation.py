@@ -28,9 +28,9 @@ def get_recommendation(risk, temp=None, rainfall=None):
     """
 
     try:
-        # Using gemini-pro instead of gemini-1.5-flash-8b to avoid 404
+        # Using gemini-1.5-flash instead of gemini-pro to avoid 404
         response = client.models.generate_content(
-            model="gemini-pro",
+            model="gemini-1.5-flash",
             contents=prompt
         )
         return response.text.strip()
