@@ -92,3 +92,4 @@ analysis_*.txt
 # Local config
 config.py
 secrets.py
+*.env
