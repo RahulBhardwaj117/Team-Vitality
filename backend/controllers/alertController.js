@@ -2,27 +2,12 @@ const catchAsync = require('../utils/catchAsync');
 const Alert = require('../models/Alert');
 
 exports.getAlerts = catchAsync(async (req, res) => {
-  const alerts = [
-    {
-      id: 1,
-      type: 'weather',
-      severity: 'high',
-      message: 'Heavy rain expected in 2 hours',
-      timestamp: new Date().toISOString()
-    },
-    {
-      id: 2,
-      type: 'crop',
-      severity: 'medium',
-      message: 'Soil moisture low in Sector A',
-      timestamp: new Date(Date.now() - 3600000).toISOString()
-    }
-  ];
+  const alerts = await Alert.find().sort({ createdAt: -1 }).limit(100);
 
   res.status(200).json({
-    status: 'success',
-    results: alerts.length,
-    data: { alerts }
+    success: true,
+    count: alerts.length,
+    data: alerts
   });
 });
 
@@ -34,14 +19,11 @@ exports.getAlertById = catchAsync(async (req, res) => {
 });
 
 exports.createAlert = catchAsync(async (req, res) => {
-  const newAlert = {
-    id: Date.now(),
-    ...req.body,
-    timestamp: new Date().toISOString()
-  };
+  const alert = await Alert.create(req.body);
+
   res.status(201).json({
-    status: 'success',
-    data: { alert: newAlert }
+    success: true,
+    data: alert
   });
 });
 
@@ -71,12 +53,13 @@ exports.getUserAlerts = catchAsync(async (req, res) => {
   const alerts = await Alert.find().sort({ createdAt: -1 }).limit(50);
   
   res.status(200).json({
-    status: 'success',
-    data: { alerts }
+    success: true,
+    data: alerts
   });
 });
 
 exports.triggerEmergencyAlert = catchAsync(async (req, res) => {
+  console.log('🚨 ALERT TRIGGER RECEIVED on Backend');
   const { exec } = require('child_process');
   const path = require('path');
   
