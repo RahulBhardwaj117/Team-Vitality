@@ -3250,7 +3250,7 @@ function submitPDResponse() {
   // Send to Backend
   // NUCLEAR FIX: Explicitly valid token for demo users
   let safeToken = currentUser?.token;
-  if ((currentUser.email === 'demo@agriurban.ai' || currentUser.email === 'admin@demo.com' || currentUser.email === 'demo@demo.com') ||
+  if ((currentUser?.email === 'demo@agriurban.ai' || currentUser?.email === 'admin@demo.com' || currentUser?.email === 'demo@demo.com') ||
        !safeToken) {
        console.log("⚠️ Using fallback demo token for submission");
        safeToken = "electron-user-demo";

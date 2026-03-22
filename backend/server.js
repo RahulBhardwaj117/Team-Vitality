@@ -143,6 +143,8 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/chat', chatbotRoutes);
 
 // --- Disaster Report Routes (Inline for now) ---
+// Temporary memory store for offline mode
+global.mockReports = [];
 app.post('/api/disaster-reports', protect, async (req, res) => {
   try {
     const reportData = req.body;
@@ -150,16 +152,27 @@ app.post('/api/disaster-reports', protect, async (req, res) => {
     if (!reportData.severity && !reportData.resources && !reportData.sos) {
        return res.status(400).json({ success: false, error: 'Missing report details' });
     }
+    
+    if (mongoose.connection.readyState !== 1) {
+       const mockReport = { ...reportData, _id: new mongoose.Types.ObjectId().toString(), createdAt: new Date(), status: 'active' };
+       global.mockReports.push(mockReport);
+       logger.info('Saved report offline');
+       return res.json({ success: true, message: 'Report submitted successfully (Offline mode)', reportId: mockReport._id });
+    }
+
     const report = await DisasterReport.create(reportData);
     res.json({ success: true, message: 'Report submitted successfully', reportId: report._id });
   } catch (error) {
     logger.error('Error submitting disaster report:', error);
-    res.status(500).json({ success: false, error: 'Failed to submit report' });
+    res.status(500).json({ success: false, error: 'Database Error: ' + error.message });
   }
 });
 
 app.get('/api/disaster-reports', protect, async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+       return res.json({ success: true, data: global.mockReports });
+    }
     const reports = await DisasterReport.find({ status: 'active' }).sort({ createdAt: -1 });
     res.json({ success: true, data: reports });
   } catch (error) {
@@ -173,6 +186,10 @@ app.post('/api/disaster-reports/archive', protect, async (req, res) => {
      // Check admin
      if (req.user.role !== 'admin' && req.user.role !== 'demo') {
         return res.status(403).json({ success: false, error: 'Unauthorized' });
+     }
+     if (mongoose.connection.readyState !== 1) {
+        global.mockReports = [];
+        return res.json({ success: true, message: 'All offline reports archived' });
      }
      await DisasterReport.updateMany({ status: 'active' }, { status: 'archived' });
      res.json({ success: true, message: 'All reports archived' });

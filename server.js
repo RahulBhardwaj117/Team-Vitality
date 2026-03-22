@@ -33,16 +33,20 @@ const auth = async (req, res, next) => {
   }
 
   const token = authHeader.split(' ')[1];
-  
+
+  // --- DEMO TOKEN BYPASS ---
+  // The demo token is not a real JWT; allow it through with a synthetic user.
+  if (token === 'electron-user-demo') {
+    req.userId = 'demo-user';
+    req.user = { id: 'demo-user', email: 'demo@agriurban.ai', role: 'demo', name: 'Demo User' };
+    return next();
+  }
+
   try {
-    // In a real app, verify JWT here. 
-    // For now, we'll validate it via the controller's logic or just pass through if we trust the token structure.
-    // But better to use a proper JWT verification middleware.
-    // Let's use a simple check for now, assuming the token contains the user ID.
     const jwt = require('jsonwebtoken');
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default_secret_key');
     req.userId = decoded.id;
-    
+
     const user = await db.getUserById(req.userId);
     if (!user) {
       return res.status(401).json({

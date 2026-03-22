@@ -1,4 +1,5 @@
 @echo off
+set PYTHONIOENCODING=utf-8
 title AgriUrbanAI Backend Server
 color 0A
 
