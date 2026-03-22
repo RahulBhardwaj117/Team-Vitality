@@ -4,10 +4,12 @@ from dotenv import load_dotenv
 
 # Ensure .env is loaded (one level up)
 env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
-load_dotenv(env_path)
+load_dotenv(dotenv_path=env_path, override=True)
 
 # Initialize Client
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+api_key = os.getenv("GEMINI_API_KEY")
+print(f"DEBUG: Using Gemini Key: {api_key[:5] if api_key else 'None'}")
+client = genai.Client(api_key=api_key)
 
 def get_recommendation(risk, temp=None, rainfall=None):
     """
@@ -26,7 +28,7 @@ def get_recommendation(risk, temp=None, rainfall=None):
     """
 
     try:
-        # Using 1.5-flash for faster response and improved reasoning
+        # Using gemini-1.5-flash instead of gemini-pro to avoid 404
         response = client.models.generate_content(
             model="gemini-1.5-flash",
             contents=prompt

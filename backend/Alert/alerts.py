@@ -24,11 +24,10 @@ TWILIO_PHONE       = os.getenv("TWILIO_PHONE")
 # --------------------------------
 # In a real app, fetch this from your database
 DEFAULT_USERS= [
+    {"name": "User", "phone": "+917303305787", "language": "en"},
     {"name": "Rishabh Verma", "phone": "+919457829890", "language": "hi"},
-    {"name": "Rahul Bhardwaj", "phone":"+917307438928",
-     "language": "kn"},
-     {"name": "Sambhawna Bajpei", "phone":"+918368160206",
-     "language": "kn"}
+    {"name": "Rahul Bhardwaj", "phone":"+917307438928", "language": "kn"},
+    {"name": "Sambhawna Bajpei", "phone":"+918368160206", "language": "kn"}
 ]
 
 
@@ -137,6 +136,9 @@ def trigger_alerts(risk, temp, rainfall, users=None):
         executor.submit(send_call_single, u["phone"], msg, u.get("language", "en"))
         
         results.append({"user": u.get("name", "Unknown"), "status": "queued"})
+    
+    # 3. Wait for all threads to finish
+    executor.shutdown(wait=True)
     
     return {"status": "processed", "risk": risk, "details": results}
 

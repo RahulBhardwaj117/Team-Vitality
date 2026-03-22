@@ -1,0 +1,16 @@
+{
+    "forecast": [
+        {
+            "day": "Today",
+            "condition": "Clear",
+            "rain_chance": 0,
+            "temp": 30,
+            "icon": "☀️",
+            "humidity": 50,
+            "wind": 10,
+            "min_temp": 20,
+            "max_temp": 30
+        }
+    ],
+    "location": "Gautam Buddha Nagar"
+}

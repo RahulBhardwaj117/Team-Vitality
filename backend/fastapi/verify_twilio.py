@@ -4,15 +4,16 @@ import logging
 from twilio.rest import Client
 from dotenv import load_dotenv
 
+load_dotenv()
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("TwilioTest")
 
 # Manually load vars to be sure
-# SID and Token from previous step output (trimmed whitespace if any)
-SID = "ACf86884475d351afd880511b10c8b3152"
-TOKEN = "54c1bd0b2bb55199d209091f134153d7" 
-FROM_NUMBER = "+17174524803"
+SID = os.getenv("TWILIO_ACCOUNT_SID")
+TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
+FROM_NUMBER = os.getenv("TWILIO_PHONE")
 
 def test_sms():
     print(f"Testing Twilio Configuration...")
@@ -22,8 +23,7 @@ def test_sms():
     try:
         client = Client(SID, TOKEN)
         
-        # Send to Rahul's number from the DEFAULT_USERS list
-        # "name": "Rahul Bhardwaj", "phone":"+917307438928"
+        # Send to Rahul's number
         target_number = "+917307438928" 
         
         print(f"Attempting to send SMS to {target_number}...")

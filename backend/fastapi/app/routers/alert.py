@@ -168,7 +168,7 @@ async def trigger_random_alert(bg: BackgroundTasks):
     import google.generativeai as genai
     
     # Configure Gemini
-    GEMINI_API_KEY = "AIzaSyD1dHOT_Yh6vRtTdJz-HbAtbNu_IP-OMEU"
+    GEMINI_API_KEY = "AIzaSyA5BuCNj1fgJNnwryjjLUKxjIluCzSrbnc"
     try:
         genai.configure(api_key=GEMINI_API_KEY)
         model = genai.GenerativeModel('gemini-pro')

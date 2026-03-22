@@ -1,4 +1,5 @@
 @echo off
+set PYTHONIOENCODING=utf-8
 echo ===================================================
 echo   AgriUrbanAI - All-in-One Startup Script
 echo ===================================================

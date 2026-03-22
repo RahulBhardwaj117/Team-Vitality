@@ -81,6 +81,7 @@ def start_scheduler_engine():
     """
     if not scheduler.running:
         # Run every 6 hours
-        scheduler.add_job(lambda: asyncio.run(analyze_and_alert_job()), 'interval', hours=6)
-        scheduler.start()
+        # scheduler.add_job(lambda: asyncio.run(analyze_and_alert_job()), 'interval', hours=6)
+        # scheduler.start()
+        logger.info("❌ Alert Scheduler Engine Disabled (Manual Mode only)")
         logger.info("✅ Alert Scheduler Engine Started (Interval: 6 hours)")
