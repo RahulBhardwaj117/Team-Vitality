@@ -355,11 +355,35 @@ class AgriUrbanChatbot {
         'gemini-pro'             // Fallback
       ];
 
+      // Gather context from dashboard
+      const locationInfo = document.querySelector('.location-card')?.innerText?.replace(/\n/g, ', ') || 'Gautam Buddha Nagar';
+      const weatherInfo = document.getElementById('current-weather-summary')?.innerText?.replace(/\n/g, ' ') || 'Sun 30°C';
+      const forecastInfo = document.getElementById('forecast-data')?.innerText?.replace(/\n/g, ' ') || 'No forecast data available';
+      const floodInfo = document.querySelector('.flood-section-v2 .prediction-details')?.innerText?.replace(/\n/g, ' ') || 'Low Risk';
+      const heatwaveInfo = document.querySelector('.heatwave-section .prediction-details')?.innerText?.replace(/\n/g, ' ') || 'Low Risk';
+      const droughtInfo = document.querySelector('.drought-section .prediction-details')?.innerText?.replace(/\n/g, ' ') || 'Low Risk';
+      const aiRecommendation = document.getElementById('ai-recommendation-text')?.innerText?.replace(/\n/g, ' ') || '';
+
       // Context for the AI
       const systemContext = `You are AgriUrban AI, an intelligent agricultural assistant. 
       You help farmers and urban planners with weather forecasts, irrigation advice, crop guidance, and pest control. 
-      Current context: The user is asking about "${message}". 
-      Provide helpful, concise, and accurate advice. Format your response nicely.`;
+      
+      CRITICAL INSTRUCTION: You MUST use the following Dashboard Data to answer the user's question. 
+      DO NOT ask the user for their location, city, zip code, or any other details to provide a forecast or advice. You already have all the data you need below. If they ask for a forecast or irrigation advice, just give it directly based on this data.
+      
+      --- CURRENT DASHBOARD DATA ---
+      - Location: ${locationInfo}
+      - Current Weather: ${weatherInfo}
+      - Upcoming Forecast: ${forecastInfo}
+      - Flood Status: ${floodInfo}
+      - Heatwave Status: ${heatwaveInfo}
+      - Drought/Soil Status: ${droughtInfo}
+      - General AI Advice: ${aiRecommendation}
+      ------------------------------
+
+      User Question: "${message}"
+      
+      Respond directly using ONLY the data above. Do not ask for more information.`;
 
       let response;
       let data;
