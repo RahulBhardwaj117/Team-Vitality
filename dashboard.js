@@ -2547,7 +2547,7 @@ function initializeEventListeners() {
     // --- Step 4: Optionally call backend in the background (non-blocking) ---
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // Increased to 30s
 
       const response = await fetch(`${API_URL}/alerts/trigger`, {
         method: 'POST',
