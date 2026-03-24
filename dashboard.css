@@ -713,7 +713,7 @@ body {
 /* Enhanced Map Container */
 #map {
   flex-grow: 1;
-  min-height: 400px;
+  min-height: 370px;
   width: 100%;
   position: relative;
   background: #1e293b;
@@ -973,7 +973,7 @@ body {
 
 /* Enhanced Send Alert Button */
 #send-alert-btn {
-  padding: 1rem 2rem;
+  /* padding: 1rem 2rem; */
   border: none;
   background: var(--gradient-success);
   color: var(--text-light);
@@ -1360,7 +1360,7 @@ body {
 /* Alert Button at Top of Control Panel */
 .alert-btn-top {
   width: 100%;
-  padding: 1rem 1.5rem;
+  padding: 1rem 0rem;
   background: linear-gradient(135deg, #E74C3C 0%, #C0392B 100%);
   border: none;
   border-radius: 12px;
@@ -1517,7 +1517,7 @@ body {
 .map-header h3 {
   font-size: 1.3rem;
   font-weight: 700;
-  color: var(--text-dark);
+  color: #cbd5e1;
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -1566,7 +1566,7 @@ body {
 /* Recommendation Panel - Below Map */
 .dashboard-panel.map-section .recommendation-panel {
   height: auto;
-  min-height: 120px;
+  min-height: 153px;
   padding: 1rem;
   background: rgba(255, 255, 255, 0.9);
   border-radius: 16px;
@@ -2254,3 +2254,43 @@ body.dark-mode .confidence-indicator {
   color: var(--text-light);
 }
 
+
+/* Post Disaster & Additional Extracted Styles */
+
+.slider.round:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked+.slider {
+  background-color: #E74C3C;
+}
+
+input:checked+.slider:before {
+  transform: translateX(26px);
+}
+
+
+@keyframes sosPulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7);
+  }
+
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 20px rgba(231, 76, 60, 0);
+  }
+
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(231, 76, 60, 0);
+  }
+}

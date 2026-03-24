@@ -37,7 +37,7 @@ body {
   align-items: center;
   background-color: #0f172a;
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 /* Main Container */
@@ -318,15 +318,9 @@ body {
 
 .demo-buttons {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.75rem;
-  flex-direction: row;
   justify-content: center;
-}
-
-@media (max-width: 480px) {
-  .demo-buttons {
-    flex-direction: column;
-  }
 }
 
 .demo-btn {
