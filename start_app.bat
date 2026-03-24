@@ -25,7 +25,7 @@ start "AgriUrbanAI Node Backend" cmd /k "cd /d ""%~dp0backend"" && npm start"
 echo [INFO] Launching Dashboard...
 :: Wait a few seconds for backends to initialize
 timeout /t 5 /nobreak >nul
-start "" "%~dp0index.html"
+start "" "%~dp0www\index.html"
 
 echo.
 echo [SUCCESS] System started! 
