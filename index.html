@@ -68,8 +68,9 @@
       margin: 0;
       padding: 0;
       width: 100%;
-      height: 100%;
+      min-height: 100vh;
       overflow-x: hidden;
+      overflow-y: auto;
       font-family: 'Inter', sans-serif;
     }
 
@@ -78,13 +79,13 @@
       min-height: 100vh;
       width: 100%;
       /* Deep Tech Background */
-      background-color: #05111a;
+      background-color: #0f172a;
       background-image:
         /* Blueprint Grid */
         linear-gradient(rgba(46, 204, 113, 0.05) 1px, transparent 1px),
         linear-gradient(90deg, rgba(46, 204, 113, 0.05) 1px, transparent 1px),
         /* Subtle Radial Glow */
-        radial-gradient(circle at 50% 50%, rgba(5, 25, 40, 0) 0%, #05111a 100%);
+        radial-gradient(circle at 50% 50%, #1e293b 0%, #0f172a 100%);
       background-size: 40px 40px, 40px 40px, 100% 100%;
       display: flex;
       flex-direction: column;
@@ -93,7 +94,7 @@
       text-align: center;
       padding: 1rem;
       position: relative;
-      overflow: hidden;
+
     }
 
     /* Vignette & Texture Overlay */
@@ -105,7 +106,7 @@
       right: 0;
       bottom: 0;
       background:
-        radial-gradient(circle at center, transparent 20%, #05111a 100%),
+        radial-gradient(circle at center, transparent 20%, #0f172a 100%),
         url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%232ecc71' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
       pointer-events: none;
       z-index: 1;
@@ -228,17 +229,28 @@
 
     .feature-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      grid-template-columns: repeat(3, 1fr);
       gap: 1.5rem;
       margin: 1.5rem 0 3rem 0;
       animation: fadeInUp 0.8s ease-out 0.4s backwards;
     }
 
+    @media (max-width: 1024px) {
+      .feature-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .feature-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .feature-card {
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(30, 41, 59, 0.7);
       backdrop-filter: blur(15px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-top: 1px solid rgba(255, 255, 255, 0.3);
+      border: 1px solid #334155;
       border-radius: 20px;
       padding: 1.5rem;
       transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -260,10 +272,10 @@
     }
 
     .feature-card:hover {
-      transform: translateY(-8px) scale(1.02);
-      background: rgba(255, 255, 255, 0.1);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-      border-color: rgba(255, 255, 255, 0.3);
+      transform: translateY(-4px);
+      background: rgba(30, 41, 59, 0.9);
+      box-shadow: 0 10px 15px -3px rgba(34, 197, 94, 0.2), 0 4px 6px -4px rgba(34, 197, 94, 0.1);
+      border-color: rgba(51, 65, 85, 0.8);
     }
 
     .feature-card:hover::before {
@@ -412,9 +424,8 @@
       top: 0;
       left: 0;
       width: 100%;
-      height: 100vh;
       min-height: 100vh;
-      max-height: 100vh;
+      min-height: 100vh;
       z-index: 100;
     }
 
@@ -430,9 +441,8 @@
     /* Content Sections */
     .content-section {
       display: none;
-      height: 100vh;
       min-height: 100vh;
-      max-height: 100vh;
+      min-height: 100vh;
       overflow-y: auto;
       overflow-x: hidden;
       position: relative;
@@ -457,23 +467,8 @@
     }
 
     #dashboard-section {
-      height: 100vh;
-      overflow: hidden;
-    }
-
-    #dashboard-section .container {
-      height: 100vh;
-      overflow: hidden;
-    }
-
-    #dashboard-section .controls-panel {
-      height: 100vh;
-      overflow-y: auto;
-    }
-
-    #dashboard-section .dashboard-panel {
-      height: 100vh;
-      overflow: hidden;
+      min-height: 100vh;
+      position: relative;
     }
 
     /* Analytics Styles */
@@ -491,8 +486,12 @@
 
     .analytics-header h1 {
       font-size: 2.5rem;
-      color: var(--text-dark);
+      color: #f1f5f9;
       margin-bottom: 0.5rem;
+    }
+
+    .analytics-header p {
+      color: #94a3b8;
     }
 
     .analytics-grid {
@@ -506,12 +505,13 @@
     }
 
     .analytics-card {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(20px);
+      background: rgba(30, 41, 59, 1);
+      /* bg-slate-800 */
       border-radius: 16px;
-      padding: 2rem;
-      box-shadow: var(--shadow-lg);
-      border: 1px solid rgba(15, 117, 188, 0.1);
+      padding: 1.5rem;
+      /* p-6 */
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      border: 1px solid #334155;
       display: flex;
       flex-direction: column;
     }
@@ -561,44 +561,44 @@
     }
 
     .risk-label {
-      color: var(--text-dark);
+      color: #f1f5f9;
     }
 
     .risk-value.low {
-      color: #2ECC71;
+      color: #22c55e;
     }
 
     .risk-value.medium {
-      color: #F39C12;
+      color: #f97316;
     }
 
     .risk-value.high {
-      color: #E74C3C;
+      color: #ef4444;
     }
 
     .progress-bar {
-      height: 8px;
-      background: rgba(0, 0, 0, 0.05);
-      border-radius: 4px;
+      height: 12px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
       overflow: hidden;
     }
 
     .progress {
       height: 100%;
-      border-radius: 4px;
-      transition: width 1s ease-out;
+      border-radius: 999px;
+      transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .progress.low {
-      background: #2ECC71;
+      background: #22c55e;
     }
 
     .progress.medium {
-      background: #F39C12;
+      background: #f97316;
     }
 
     .progress.high {
-      background: #E74C3C;
+      background: #ef4444;
     }
 
     /* Resource Metrics */
@@ -785,10 +785,10 @@
 
     .about-header h1 {
       font-size: 2.5rem;
-      color: var(--text-dark);
+      color: #ffffff;
       margin-bottom: 0.5rem;
       font-weight: 800;
-      background: linear-gradient(135deg, var(--text-dark), var(--primary-color));
+      background: linear-gradient(135deg, #ffffff, #2ecc71);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -800,14 +800,14 @@
     }
 
     .about-section h2 {
-      color: var(--text-dark);
+      color: #ffffff;
       margin-bottom: 1.5rem;
       font-size: 1.8rem;
       font-weight: 700;
     }
 
     .about-section p {
-      color: var(--text-dark);
+      color: #94a3b8;
       opacity: 0.9;
       line-height: 1.7;
       font-size: 1rem;
@@ -815,43 +815,48 @@
 
     .features-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      grid-template-columns: repeat(1, 1fr);
       gap: 2rem;
+    }
+
+    @media (min-width: 768px) {
+      .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
     }
 
     .feature-item {
       text-align: center;
       padding: 2rem;
-      background: rgba(255, 255, 255, 0.9);
-      backdrop-filter: blur(20px);
+      background-color: #1e293b;
+      border: 1px solid #334155;
       border-radius: 12px;
-      box-shadow: var(--shadow-md);
       transition: all 0.3s ease;
+      /* removed explicit heights, letting padding determine layout naturally */
     }
 
     .feature-item:hover {
       transform: translateY(-5px);
-      box-shadow: var(--shadow-lg);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
     }
 
     .feature-item i {
       font-size: 3rem;
-      color: var(--primary-color);
+      color: #22c55e;
       margin-bottom: 1rem;
       display: block;
     }
 
     .feature-item h4 {
-      color: var(--text-dark);
+      color: #ffffff;
       margin-bottom: 0.5rem;
       font-weight: 600;
     }
 
     .feature-item p {
-      color: var(--text-dark);
-      opacity: 0.8;
-      font-size: 0.9rem;
-      line-height: 1.5;
+      color: #cbd5e1;
+      font-size: 0.95rem;
+      line-height: 1.6;
     }
 
     .tech-stack {
@@ -901,16 +906,9 @@
     }
 
     /* Dark mode adjustments */
-    [data-theme="dark"] .analytics-card,
-    [data-theme="dark"] .alert-item,
-    [data-theme="dark"] .feature-item {
+    [data-theme="dark"] .alert-item {
       background: rgba(44, 62, 80, 0.9);
       border-color: rgba(74, 144, 226, 0.2);
-    }
-
-    [data-theme="dark"] .metric {
-      background: rgba(74, 144, 226, 0.1);
-      border-color: rgba(74, 144, 226, 0.3);
     }
 
     /* Mobile responsiveness */
@@ -1030,7 +1028,12 @@
 
     <!-- Enhanced Navbar -->
     <nav class="navbar">
-      <div class="nav-logo">
+      <div class="nav-logo" style="display: flex; align-items: center;">
+        <button id="mobile-sidebar-toggle" class="sidebar-toggle-btn"
+          onclick="document.querySelector('.controls-panel').classList.toggle('active')"
+          style="display: none; background: transparent; border: none; color: #cbd5e1; margin-right: 10px; cursor: pointer; padding: 4px;">
+          <i class="ph ph-sidebar-simple" style="font-size: 1.8rem;"></i>
+        </button>
         <span class="logo-text">AgriUrbanAI</span>
       </div>
       <button class="mobile-menu-btn" id="mobile-menu-toggle">
@@ -1384,14 +1387,14 @@
 
         <!-- Victim Response Section -->
         <div class="response-card"
-          style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border-radius: 16px; padding: 2rem; box-shadow: var(--shadow-lg); border: 1px solid rgba(15, 117, 188, 0.1);">
+          style="background: #1e293b; border-radius: 16px; padding: 2rem; border: 1px solid #334155; display: flex; flex-direction: column; gap: 1.5rem;">
 
           <!-- Location -->
-          <div class="form-group" style="margin-bottom: 2rem;">
-            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-dark);"><i
+          <div class="form-group">
+            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #f1f5f9;"><i
                 class="ph-map-pin"></i> Current Location</label>
             <div id="pd-location-display"
-              style="padding: 1rem; background: rgba(0,0,0,0.05); border-radius: 8px; margin-bottom: 1rem; font-family: monospace; color: var(--text-dark);">
+              style="padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 8px; margin-bottom: 1rem; font-family: monospace; color: #f1f5f9;">
               Waiting for location...
             </div>
             <button onclick="detectPostDisasterLocation()" class="cta-btn-secondary"
@@ -1400,34 +1403,32 @@
             </button>
           </div>
 
-          <hr style="border: 0; height: 1px; background: rgba(0,0,0,0.1); margin: 2rem 0;">
+          <hr style="border: 0; height: 1px; background: #334155;">
 
           <!-- Severity -->
-          <div class="form-group" style="margin-bottom: 2rem;">
-            <label style="display: block; font-weight: 600; margin-bottom: 1rem; color: var(--text-dark);"><i
+          <div class="form-group">
+            <label style="display: block; font-weight: 600; margin-bottom: 1rem; color: #f1f5f9;"><i
                 class="ph-warning"></i> Incident Severity</label>
-            <div style="display: flex; gap: 1rem; justify-content: space-between; flex-wrap: wrap;">
-              <label style="flex: 1; min-width: 100px; cursor: pointer;">
+            <div style="display: flex; width: 100%; border-radius: 8px; overflow: hidden; border: 1px solid #334155;">
+              <label style="flex: 1; cursor: pointer; margin: 0;">
                 <input type="radio" name="pd-severity" value="low" style="display: none;"
                   onchange="updateSeverityUI(this)">
-                <div class="severity-box low"
-                  style="padding: 1rem; border: 2px solid #2ECC71; border-radius: 8px; text-align: center; color: #2ECC71; font-weight: bold; transition: all 0.3s;">
+                <div class="severity-box low">
                   Low
                 </div>
               </label>
-              <label style="flex: 1; min-width: 100px; cursor: pointer;">
+              <label
+                style="flex: 1; cursor: pointer; margin: 0; border-left: 1px solid #334155; border-right: 1px solid #334155;">
                 <input type="radio" name="pd-severity" value="medium" style="display: none;"
                   onchange="updateSeverityUI(this)">
-                <div class="severity-box medium"
-                  style="padding: 1rem; border: 2px solid #F39C12; border-radius: 8px; text-align: center; color: #F39C12; font-weight: bold; transition: all 0.3s;">
+                <div class="severity-box medium">
                   Medium
                 </div>
               </label>
-              <label style="flex: 1; min-width: 100px; cursor: pointer;">
+              <label style="flex: 1; cursor: pointer; margin: 0;">
                 <input type="radio" name="pd-severity" value="high" style="display: none;"
                   onchange="updateSeverityUI(this)">
-                <div class="severity-box high"
-                  style="padding: 1rem; border: 2px solid #E74C3C; border-radius: 8px; text-align: center; color: #E74C3C; font-weight: bold; transition: all 0.3s;">
+                <div class="severity-box high">
                   High
                 </div>
               </label>
@@ -1435,11 +1436,11 @@
           </div>
 
           <!-- Resources Needed -->
-          <div class="form-group" style="margin-bottom: 2rem;">
-            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-dark);"><i
+          <div class="form-group">
+            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #f1f5f9;"><i
                 class="ph-first-aid-kit"></i> Resources Needed</label>
             <textarea id="pd-resource-input" placeholder="Describe what you need (e.g., Water, Medical Kit, Food)..."
-              style="width: 100%; padding: 1rem; border-radius: 8px; border: 1px solid #ccc; min-height: 120px; font-family: inherit; margin-bottom: 1rem;"></textarea>
+              style="width: 100%; padding: 1rem; border-radius: 8px; border: 1px solid #334155; min-height: 120px; font-family: inherit; margin-bottom: 1rem; background: #0f172a; color: #f1f5f9;"></textarea>
 
             <div style="text-align: center;">
               <button id="pd-record-btn" onmousedown="startPDRecording()" onmouseup="stopPDRecording()"
@@ -1450,19 +1451,19 @@
             </div>
           </div>
 
-          <hr style="border: 0; height: 1px; background: rgba(0,0,0,0.1); margin: 2rem 0;">
+          <hr style="border: 0; height: 1px; background: #334155;">
 
           <!-- Cannot Speak / SOS -->
           <div class="form-group"
-            style="margin-bottom: 1rem; background: rgba(231, 76, 60, 0.05); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(231, 76, 60, 0.2);">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
-              <label style="font-weight: 700; color: #c0392b; display: flex; align-items: center; gap: 0.5rem;">
+            style="background: #0f172a; padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.4);">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0;">
+              <label style="font-weight: 700; color: #ef4444; display: flex; align-items: center; gap: 0.5rem;">
                 <i class="ph-speaker-slash"></i> I Cannot Speak
               </label>
               <label class="switch" style="position: relative; display: inline-block; width: 60px; height: 34px;">
                 <input type="checkbox" id="pd-cant-speak-toggle" onchange="togglePDSOS()">
                 <span class="slider round"
-                  style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px;"></span>
+                  style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #334155; transition: .4s; border-radius: 34px;"></span>
                 <span class="slider-before"
                   style="position: absolute; content: ''; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%;"></span>
               </label>
@@ -1471,7 +1472,7 @@
 
           <!-- Cluster Protocol Info -->
           <div
-            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; background: rgba(5, 17, 26, 0.03); padding: 10px; border-radius: 8px;">
+            style="display: flex; justify-content: space-between; align-items: center; background: rgba(5, 17, 26, 0.2); padding: 10px; border-radius: 8px;">
             <button onclick="openClusterModal()"
               style="background: none; border: 1px solid #05111a; padding: 0.5rem 1rem; border-radius: 20px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: #05111a;">
               <i class="ph-share-network"></i> Cluster Protocol
