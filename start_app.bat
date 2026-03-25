@@ -13,19 +13,31 @@ if %errorlevel% neq 0 (
     exit /b
 )
 
-:: 2. Start Python Backend Server (FastAPI)
-echo [INFO] Starting Backend Server (FastAPI)...
-start "AgriUrbanAI FastAPI Backend" cmd /k "cd /d ""%~dp0backend\fastapi"" && python main.py"
+:: 2. Start Python Backend Server 
+if exist "%~dp0backend\fastapi\main.py" (
+    echo [INFO] Starting Backend Server - FastAPI 
+    start "AgriUrbanAI FastAPI Backend" cmd /k "cd /d ""%~dp0backend\fastapi"" && python main.py"
+) else (
+    echo [WARNING] FastAPI backend not found at %~dp0backend\fastapi\main.py
+)
 
 :: 3. Start Node Backend Server
-echo [INFO] Starting Node Backend Server...
-start "AgriUrbanAI Node Backend" cmd /k "cd /d ""%~dp0backend"" && npm start"
+if exist "%~dp0backend\server.js" (
+    echo [INFO] Starting Node Backend Server...
+    start "AgriUrbanAI Node Backend" cmd /k "cd /d ""%~dp0backend"" && node server.js"
+) else (
+    echo [WARNING] Node backend not found at %~dp0backend\server.js
+)
 
 :: 4. Launch Frontend
 echo [INFO] Launching Dashboard...
 :: Wait a few seconds for backends to initialize
 timeout /t 5 /nobreak >nul
-start "" "%~dp0index.html"
+if exist "%~dp0frontend\index.html" (
+    start "" "%~dp0frontend\index.html"
+) else (
+    echo [ERROR] Frontend index.html not found!
+)
 
 echo.
 echo [SUCCESS] System started! 
