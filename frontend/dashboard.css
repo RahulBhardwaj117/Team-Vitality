@@ -375,7 +375,7 @@ body {
 
 /* Enhanced Controls Panel (Left Sidebar) */
 .controls-panel {
-  width: 256px;
+  width: 350px;
   /* w-64 */
   padding: 1.5rem;
   background: #1e293b;
@@ -713,7 +713,7 @@ body {
 /* Enhanced Map Container */
 #map {
   flex-grow: 1;
-  min-height: 370px;
+  min-height: 270px;
   width: 100%;
   position: relative;
   background: #1e293b;
@@ -2255,13 +2255,15 @@ body.dark-mode .confidence-indicator {
 }
 
 @media (max-width: 768px) {
+
   /* Hamburger Menu Toggle */
   .mobile-menu-btn {
     display: block;
   }
-  
+
   .nav-menu {
-    display: none; /* Hide by default on mobile */
+    display: none;
+    /* Hide by default on mobile */
     position: absolute;
     top: 70px;
     left: 5%;
@@ -2272,12 +2274,13 @@ body.dark-mode .confidence-indicator {
     padding: 1.5rem 0;
     border-radius: 16px;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
     z-index: 2000;
   }
 
   .nav-menu.active {
-    display: flex; /* Shown when toggled via JS */
+    display: flex;
+    /* Shown when toggled via JS */
   }
 
   /* Make nav items span the width nicely */
@@ -2286,7 +2289,7 @@ body.dark-mode .confidence-indicator {
     padding: 1rem 2rem;
     justify-content: flex-start;
   }
-  
+
   /* Ensure container stacks nicely on mobile */
   .container {
     display: flex;
@@ -2294,13 +2297,13 @@ body.dark-mode .confidence-indicator {
     height: auto;
     min-height: auto;
   }
-  
+
   .controls-panel {
     width: 100%;
     border-right: none;
     border-bottom: 2px solid #334155;
   }
-  
+
   .dashboard-panel.map-section {
     width: 100%;
     min-height: 50vh;
@@ -2311,7 +2314,7 @@ body.dark-mode .confidence-indicator {
     padding: 0 1rem;
     height: 60px;
   }
-  
+
   .nav-logo {
     margin-right: auto;
   }
