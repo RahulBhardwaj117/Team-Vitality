@@ -44,7 +44,7 @@ function generateDefaultForecast() {
 }
 
 // API Base URLs
-const API_URL = 'http://localhost:5000/api'; // Node.js backend
+const API_URL = 'http://localhost:5005/api'; // Node.js backend
 const FASTAPI_URL = 'http://localhost:8001'; // Python AI backend
 
 // Load weather data from AI prediction service
@@ -2738,17 +2738,21 @@ function showNotification() {
   const dangerDisplay = document.getElementById('danger-type-display');
   const dangerText = document.getElementById('danger-type-text');
 
-  if (floodRisk.level === 'High' || floodRisk.level === 'Medium') {
+  const fRisk = typeof floodRisk !== 'undefined' ? floodRisk : { level: 'Normal' };
+  const hRisk = typeof heatwaveRisk !== 'undefined' ? heatwaveRisk : { level: 'Normal' };
+  const dRisk = typeof droughtRisk !== 'undefined' ? droughtRisk : { level: 'Normal' };
+
+  if (fRisk.level === 'High' || fRisk.level === 'Medium') {
     if (dangerDisplay && dangerText) {
       dangerDisplay.style.display = 'flex';
       dangerText.textContent = 'Flood Risk';
     }
-  } else if (heatwaveRisk.level === 'High' || heatwaveRisk.level === 'Medium') {
+  } else if (hRisk.level === 'High' || hRisk.level === 'Medium') {
     if (dangerDisplay && dangerText) {
       dangerDisplay.style.display = 'flex';
       dangerText.textContent = 'Heatwave Alert';
     }
-  } else if (droughtRisk.level === 'High' || droughtRisk.level === 'Medium') {
+  } else if (dRisk.level === 'High' || dRisk.level === 'Medium') {
     if (dangerDisplay && dangerText) {
       dangerDisplay.style.display = 'flex';
       dangerText.textContent = 'Drought Warning';

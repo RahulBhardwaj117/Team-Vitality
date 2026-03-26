@@ -1,0 +1,16 @@
+DEBUG: Using Gemini Key: None
+Traceback (most recent call last):
+  File "C:\Users\sambh\.vscode\Team-Vitality\backend\Alert\alerts.py", line 8, in <module>
+    from gemini_recommendation import get_recommendation
+  File "C:\Users\sambh\.vscode\Team-Vitality\backend\Alert\gemini_recommendation.py", line 12, in <module>
+    client = genai.Client(api_key=api_key)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sambh\AppData\Local\Programs\Python\Python311\Lib\site-packages\google\genai\client.py", line 426, in __init__
+    self._api_client = self._get_api_client(
+                       ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sambh\AppData\Local\Programs\Python\Python311\Lib\site-packages\google\genai\client.py", line 474, in _get_api_client
+    return BaseApiClient(
+           ^^^^^^^^^^^^^^
+  File "C:\Users\sambh\AppData\Local\Programs\Python\Python311\Lib\site-packages\google\genai\_api_client.py", line 707, in __init__
+    raise ValueError(
+ValueError: No API key was provided. Please pass a valid API key. Learn how to create an API key at https://ai.google.dev/gemini-api/docs/api-key.

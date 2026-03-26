@@ -1,0 +1,19 @@
+DEBUG: Attempting to connect to: mongodb+srv://AgriUrbanUser:****@cluster0.stmeagz.mongodb.net/?appName=Cluster0
+2026-03-26 23:33:42 [[32minfo[39m]: MongoDB Connected: ac-u8iqzli-shard-00-00.stmeagz.mongodb.net {"service":"agriurbanai-api"}
+2026-03-26 23:33:42 [[32minfo[39m]: Initializing weather service... {"service":"agriurbanai-api"}
+2026-03-26 23:33:42 [[32minfo[39m]: Weather service started with 1800000ms update interval {"service":"agriurbanai-api"}
+2026-03-26 23:33:42 [[32minfo[39m]: Generating initial weather data... {"service":"agriurbanai-api"}
+2026-03-26 23:33:43 [[32minfo[39m]: Initial weather data created for Gautam Buddha Nagar {"service":"agriurbanai-api"}
+2026-03-26 23:33:43 [[32minfo[39m]: Initial weather data created for Sector 18, Noida {"service":"agriurbanai-api"}
+2026-03-26 23:33:44 [[32minfo[39m]: Initial weather data created for Greater Noida {"service":"agriurbanai-api"}
+2026-03-26 23:33:44 [[32minfo[39m]: Weather service initialized successfully {"service":"agriurbanai-api"}
+2026-03-26 23:33:44 [[32minfo[39m]: Weather service initialized {"service":"agriurbanai-api"}
+2026-03-26 23:33:44 [[32minfo[39m]: Initializing Socket.IO service... {"service":"agriurbanai-api"}
+2026-03-26 23:33:44 [[32minfo[39m]: Socket.IO service initialized successfully {"service":"agriurbanai-api"}
+2026-03-26 23:33:44 [[32minfo[39m]: Socket service initialized {"service":"agriurbanai-api"}
+2026-03-26 23:33:44 [[32minfo[39m]: Initializing scheduled jobs... {"service":"agriurbanai-api"}
+2026-03-26 23:33:44 [[32minfo[39m]: All scheduled jobs initialized successfully {"service":"agriurbanai-api"}
+2026-03-26 23:33:44 [[32minfo[39m]: Scheduler initialized {"service":"agriurbanai-api"}
+2026-03-26 23:33:44 [[32minfo[39m]: All services initialized successfully {"service":"agriurbanai-api"}
+2026-03-26 23:33:44 [[31merror[39m]: Port 5001 is already in use. Please stop the other process or use a different port. {"service":"agriurbanai-api"}
+2026-03-26 23:33:44 [[32minfo[39m]: Try: PORT=5001 npm start {"service":"agriurbanai-api"}

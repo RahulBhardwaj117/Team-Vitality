@@ -19,6 +19,9 @@ TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN  = os.getenv("TWILIO_AUTH_TOKEN")
 TWILIO_PHONE       = os.getenv("TWILIO_PHONE")
 
+print(f"DEBUG: SID={TWILIO_ACCOUNT_SID[:5]}... TOKEN={TWILIO_AUTH_TOKEN[:5]}... PHONE={TWILIO_PHONE}", flush=True)
+
+
 # --------------------------------
 # DATA & CONSTANTS
 # --------------------------------

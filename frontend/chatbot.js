@@ -5,7 +5,7 @@
 
 class AgriUrbanChatbot {
   constructor() {
-    this.apiBaseUrl = 'http://localhost:5000/api/chat';
+    this.apiBaseUrl = 'http://localhost:5005/api/chat';
     this.sessionId = this.getOrCreateSessionId();
     this.messages = [];
     this.isOpen = false;
