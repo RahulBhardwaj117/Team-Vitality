@@ -1399,17 +1399,14 @@ function enforceRoleInterface() {
   const tabsContainer = farmerBtn ? farmerBtn.parentElement : null;
   const viewSelectGroup = tabsContainer ? tabsContainer.closest('.control-group') : null;
 
-  // Show all tabs for Admin and Demo
-  if (role === 'admin' || role === 'demo') {
+  // Show all tabs for Demo
+  if (role === 'demo') {
     if (viewSelectGroup) viewSelectGroup.style.display = 'block';
     if (tabsContainer) tabsContainer.style.display = 'flex';
     if (adminBtn) adminBtn.style.display = 'inline-flex';
 
-    // Hide City Planner button for Admin (as requested)
-    if (role === 'admin' && urbanBtn) {
-      urbanBtn.style.display = 'none';
-    } else if (role === 'demo' && urbanBtn) {
-      // Ensure it's visible for demo
+    // Ensure it's visible for demo
+    if (urbanBtn) {
       urbanBtn.style.display = 'inline-flex';
     }
 
@@ -1442,6 +1439,8 @@ function enforceRoleInterface() {
     currentView = 'farmer';
   } else if (role === 'urban' || role === 'city_planner') {
     currentView = 'urban';
+  } else if (role === 'admin') {
+    currentView = 'admin';
   }
 
   // --- NAV BAR VISIBILITY ---
