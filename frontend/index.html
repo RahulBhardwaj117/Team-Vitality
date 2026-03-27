@@ -169,6 +169,10 @@
           <i class="ph-bell"></i>
           <span>Alerts</span>
         </a>
+        <a href="#ground-reports" class="nav-item">
+          <i class="ph-broadcast"></i>
+          <span>Ground Reports</span>
+        </a>
         <a href="#post-disaster" class="nav-item" id="nav-post-disaster">
           <i class="ph-lifebuoy"></i>
           <span>Post Disaster</span>
@@ -626,11 +630,14 @@
           <i class="ph-warning-octagon"></i> Incoming Incident Reports
         </h2>
         <div style="display: flex; gap: 1rem;">
-          <button onclick="renderIncidentsPage()" class="btn" style="background: #3498db;">
+          <button onclick="renderIncidentsPage()" class="btn" style="background: #3498db; border-radius: 8px; padding: 0.6rem 1.2rem; display: flex; align-items: center; gap: 0.5rem;">
             <i class="ph-arrows-clockwise"></i> Refresh
           </button>
-          <button onclick="clearAdminReports()" class="btn" style="background: #e74c3c;">
+          <button onclick="clearAdminReports()" class="btn" style="background: #e67e22; border-radius: 8px; padding: 0.6rem 1.2rem; display: flex; align-items: center; gap: 0.5rem;">
             <i class="ph-archive"></i> Archive All
+          </button>
+          <button onclick="hardClearAllReports()" class="btn" style="background: #e74c3c; border-radius: 8px; padding: 0.6rem 1.2rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="ph-trash"></i> Clear All
           </button>
         </div>
       </div>
@@ -661,6 +668,127 @@
         <div style="text-align: center; padding: 5rem; color: #95a5a6;">
           <i class="ph-spinner ph-spin" style="font-size: 2rem;"></i>
           <p>Loading incident data...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ground Reports Content -->
+    <div id="ground-reports-content" class="content-section">
+      <div class="ground-reports-container" style="padding: 2rem; max-width: 1000px; margin: 0 auto; padding-top: 100px;">
+        <div class="header" style="text-align: center; margin-bottom: 2rem;">
+          <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem;"><i class="ph-broadcast"></i> Community Ground Reporting</h1>
+          <p style="opacity: 0.7;">Real-time bottom-up insights from the field. Your input helps everyone stay safe.</p>
+        </div>
+
+        <div class="report-form-card" style="background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(15px); border-radius: 20px; padding: 2.5rem; border: 1px solid #334155; display: flex; flex-direction: column; gap: 2rem; box-shadow: 0 20px 50px rgba(0,0,0,0.3);">
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+            <!-- Report Type Selection -->
+            <div class="form-group">
+              <label style="display: block; font-weight: 600; margin-bottom: 1rem; color: #f1f5f9; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">
+                <i class="ph-list-bullets" style="color: #4ade80;"></i> Select Report Type
+              </label>
+              <div class="report-type-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                <label class="report-type-option" style="cursor: pointer;">
+                  <input type="radio" name="report-type" value="flood" style="display: none;" checked onchange="updateReportTypeUI(this)">
+                  <div class="type-box active" style="padding: 1rem; border: 1px solid #334155; border-radius: 12px; text-align: center; background: rgba(0,0,0,0.2); transition: all 0.3s;">
+                    <i class="ph-waves" style="font-size: 1.5rem; display: block; margin-bottom: 0.5rem; color: #3498db;"></i>
+                    <span>Flood</span>
+                  </div>
+                </label>
+                <label class="report-type-option" style="cursor: pointer;">
+                  <input type="radio" name="report-type" value="crop_disease" style="display: none;" onchange="updateReportTypeUI(this)">
+                  <div class="type-box" style="padding: 1rem; border: 1px solid #334155; border-radius: 12px; text-align: center; background: rgba(0,0,0,0.2); transition: all 0.3s;">
+                    <i class="ph-plant" style="font-size: 1.5rem; display: block; margin-bottom: 0.5rem; color: #2ecc71;"></i>
+                    <span>Crop Disease</span>
+                  </div>
+                </label>
+                <label class="report-type-option" style="cursor: pointer;">
+                  <input type="radio" name="report-type" value="storm" style="display: none;" onchange="updateReportTypeUI(this)">
+                  <div class="type-box" style="padding: 1rem; border: 1px solid #334155; border-radius: 12px; text-align: center; background: rgba(0,0,0,0.2); transition: all 0.3s;">
+                    <i class="ph-wind" style="font-size: 1.5rem; display: block; margin-bottom: 0.5rem; color: #f1c40f;"></i>
+                    <span>Storm</span>
+                  </div>
+                </label>
+                <label class="report-type-option" style="cursor: pointer;">
+                  <input type="radio" name="report-type" value="infrastructure" style="display: none;" onchange="updateReportTypeUI(this)">
+                  <div class="type-box" style="padding: 1rem; border: 1px solid #334155; border-radius: 12px; text-align: center; background: rgba(0,0,0,0.2); transition: all 0.3s;">
+                    <i class="ph-buildings" style="font-size: 1.5rem; display: block; margin-bottom: 0.5rem; color: #e74c3c;"></i>
+                    <span>Road Block</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Location Information -->
+            <div class="form-group">
+              <label style="display: block; font-weight: 600; margin-bottom: 1rem; color: #f1f5f9; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">
+                <i class="ph-map-pin" style="color: #4ade80;"></i> Ground Location
+              </label>
+              <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1.5rem; border: 1px solid #334155;">
+                <div id="ground-location-display" style="font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: #94a3b8; margin-bottom: 1rem;">
+                  Detecting location...
+                </div>
+                <button onclick="detectGroundLocation()" style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid #4ade80; background: transparent; color: #4ade80; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-weight: 600; transition: all 0.3s;">
+                  <i class="ph-crosshair"></i> Refresh My Location
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <hr style="border: 0; height: 1px; background: rgba(255,255,255,0.05);">
+
+          <!-- Input Description & Voice -->
+          <div class="form-group">
+            <label style="display: block; font-weight: 600; margin-bottom: 1rem; color: #f1f5f9; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">
+              <i class="ph-chat-text" style="color: #4ade80;"></i> Describe the Situation
+            </label>
+            <div style="position: relative;">
+              <textarea id="ground-report-text" placeholder="Explain what's happening on the ground..." 
+                style="width: 100%; padding: 1.5rem; border-radius: 16px; border: 1px solid #334155; min-height: 150px; font-family: inherit; background: #0f172a; color: #f1f5f9; font-size: 1rem; resize: none; transition: all 0.3s;"></textarea>
+              
+              <div style="position: absolute; bottom: 1.5rem; right: 1.5rem; display: flex; gap: 1rem; align-items: center;">
+                <div id="voice-animation" style="display: none; align-items: center; gap: 4px;">
+                  <div class="voice-bar" style="height: 10px; width: 3px; background: #4ade80; border-radius: 2px;"></div>
+                  <div class="voice-bar" style="height: 15px; width: 3px; background: #4ade80; border-radius: 2px;"></div>
+                  <div class="voice-bar" style="height: 10px; width: 3px; background: #4ade80; border-radius: 2px;"></div>
+                </div>
+                <button id="ground-voice-btn" onmousedown="startGroundVoice()" onmouseup="stopGroundVoice()" onmouseleave="stopGroundVoice()"
+                  style="background: #4ade80; color: #0f172a; border: none; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; transition: all 0.3s; box-shadow: 0 4px 15px rgba(74, 222, 128, 0.3);">
+                  <i class="ph-microphone"></i>
+                </button>
+              </div>
+            </div>
+            <p style="margin-top: 1rem; font-size: 0.8rem; color: #94a3b8; text-align: center;">
+              <i class="ph-info"></i> Hold the microphone to record your voice input. It will be transcribed automatically.
+            </p>
+          </div>
+
+          <!-- Submit & Clear Buttons -->
+          <div style="display: flex; gap: 1rem;">
+            <button onclick="clearGroundForm()" class="btn" 
+              style="flex: 1; padding: 1.25rem; font-size: 1.1rem; border-radius: 12px; background: rgba(33, 41, 59, 0.5); color: #f1f5f9; font-weight: 600; border: 1px solid #334155; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+              <i class="ph-trash"></i> CLEAR
+            </button>
+            <button onclick="submitGroundReport()" class="cta-btn-primary" 
+              style="flex: 3; padding: 1.25rem; font-size: 1.1rem; border-radius: 12px; background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%); color: #0f172a; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.8rem; transition: all 0.3s; box-shadow: 0 10px 20px rgba(34, 197, 94, 0.2);">
+              <i class="ph-paper-plane-right"></i> SUBMIT GROUND REPORT
+            </button>
+          </div>
+
+        </div>
+
+        <!-- Recent Community Reports Feed -->
+        <div style="margin-top: 4rem;">
+          <h2 style="font-size: 1.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.8rem;">
+            <i class="ph-activity" style="color: #4ade80;"></i> Live Community Feed
+          </h2>
+          <div id="community-reports-feed" style="display: grid; gap: 1.5rem;">
+            <!-- Dynamic Feed Content -->
+            <div style="text-align: center; padding: 3rem; background: rgba(30, 41, 59, 0.4); border-radius: 16px; border: 1px dashed #334155;">
+              <p style="color: #94a3b8;">Fetching recent reports from nearby users...</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

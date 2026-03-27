@@ -199,6 +199,63 @@ app.post('/api/disaster-reports/archive', protect, async (req, res) => {
   }
 });
 
+// --- Community Report Routes (Inline for now) ---
+const CommunityReport = require('./models/CommunityReport');
+global.mockCommunityReports = [];
+
+app.post('/api/community-reports', async (req, res) => {
+  try {
+    const reportData = req.body;
+    if (!reportData.type || !reportData.description) {
+      return res.status(400).json({ success: false, error: 'Missing report details' });
+    }
+
+    if (mongoose.connection.readyState !== 1) {
+      const mockReport = { ...reportData, _id: new mongoose.Types.ObjectId().toString(), createdAt: new Date(), status: 'active' };
+      global.mockCommunityReports.push(mockReport);
+      logger.info('Saved community report offline');
+      return res.json({ success: true, message: 'Report submitted successfully (Offline mode)', reportId: mockReport._id });
+    }
+
+    const report = await CommunityReport.create(reportData);
+    res.json({ success: true, message: 'Report submitted successfully', reportId: report._id });
+  } catch (error) {
+    logger.error('Error submitting community report:', error);
+    res.status(500).json({ success: false, error: 'Database Error: ' + error.message });
+  }
+});
+
+app.get('/api/community-reports', async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.json(global.mockCommunityReports.slice(-20).reverse());
+    }
+    const reports = await CommunityReport.find({ status: 'active' }).sort({ createdAt: -1 }).limit(20);
+    res.json(reports);
+  } catch (error) {
+    logger.error('Error fetching community reports:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch reports' });
+  }
+});
+
+app.post('/api/community-reports/archive', protect, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin' && req.user.role !== 'demo') {
+      return res.status(403).json({ success: false, error: 'Unauthorized' });
+    }
+    if (mongoose.connection.readyState !== 1) {
+      global.mockCommunityReports = [];
+      return res.json({ success: true, message: 'All offline community reports archived' });
+    }
+    await CommunityReport.updateMany({ status: 'active' }, { status: 'archived' });
+    res.json({ success: true, message: 'All community reports archived' });
+  } catch (error) {
+    logger.error('Error archiving community reports:', error);
+    res.status(500).json({ success: false, error: 'Failed to archive reports' });
+  }
+});
+
+
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../build')));

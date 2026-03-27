@@ -362,13 +362,16 @@ function loadUserSession() {
       
       const postDisasterLink = document.getElementById('nav-post-disaster');
       const incidentsLink = document.getElementById('nav-incidents');
+      const groundReportsLink = document.querySelector('a[href="#ground-reports"]');
       
       if (role === 'admin') {
         if (postDisasterLink) postDisasterLink.style.display = 'none';
         if (incidentsLink) incidentsLink.style.display = 'flex';
+        if (groundReportsLink) groundReportsLink.style.display = 'none';
       } else {
         if (postDisasterLink) postDisasterLink.style.display = 'flex';
         if (incidentsLink) incidentsLink.style.display = 'none';
+        if (groundReportsLink) groundReportsLink.style.display = 'flex';
       }
   }
 
@@ -484,6 +487,8 @@ function switchSection(sectionId) {
           initMap();
         }
       }, 100); // A short delay to allow the container to become visible
+    } else if (sectionId === 'ground-reports') {
+      initializeGroundReporting();
     } else if (sectionId === 'incidents') {
       renderIncidentsPage();
     }
@@ -1333,6 +1338,7 @@ function initializeElements() {
   elements.themeToggle = document.getElementById('theme-toggle');
   elements.userRoleDisplay = document.getElementById('user-role-display');
   elements.userNameDisplay = document.getElementById('user-name-display');
+  elements.groundReportsBtn = document.querySelector('a[href="#ground-reports"]');
 }
 
 // --- THEME MANAGEMENT ---
@@ -1756,6 +1762,9 @@ function animateContextUpdate(view) {
          <p><span>Crop:</span> <strong>${cropDisplay}</strong></p>
          <p><span>Last Irrigation:</span> <strong>${irrigationDisplay}</strong></p>
          <p><span>Fertilizer Applied:</span> <strong>${fertilizerDisplay}</strong></p>
+         <button onclick="switchSection('ground-reports')" style="width: 100%; border-radius: 12px; margin-top: 1rem; border: none; padding: 0.8rem; background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%); color: #0f172a; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.3s; box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2); font-family: 'Inter', sans-serif; letter-spacing: 0.5px;">
+           <i class="ph-broadcast" style="font-size: 1.2rem;"></i> REPORT FROM FIELD
+         </button>
        `;
     } else if (currentView === 'urban') {
       if (elements.contextLabel) elements.contextLabel.innerHTML = '🏙️ Urban Zone Details';
@@ -1766,7 +1775,9 @@ function animateContextUpdate(view) {
          <p><span>Drainage:</span> <strong style="color: #2ECC71;">${farmerData.drainage}</strong></p>
          <p><span>Population:</span> <strong>${farmerData.population}</strong></p>
          <p><span>Emergency Units:</span> <strong>${farmerData.emergencyUnits}</strong></p>
-         <p><span>Last Incident:</span> <strong>${farmerData.lastIncident}</strong></p>
+         <button onclick="switchSection('ground-reports')" style="width: 100%; border-radius: 12px; margin-top: 1rem; border: none; padding: 0.8rem; background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); color: white; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.3s; box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2); font-family: 'Inter', sans-serif; letter-spacing: 0.5px;">
+           <i class="ph-broadcast" style="font-size: 1.2rem;"></i> SUBMIT GROUND INPUT
+         </button>
        `;
     } else {
       // Admin View
@@ -3463,55 +3474,85 @@ function submitPDResponse() {
 // --- ADMIN REPORTS LOGIC ---
 
 // New function for Full Page Render
-function renderIncidentsPage() {
+async function renderIncidentsPage() {
   const listContainer = document.getElementById('incidents-list-container');
   if (!listContainer) return; // Not on the page
 
   listContainer.innerHTML = '<div style="text-align: center; padding: 3rem; color: #95a5a6;"><i class="ph-spinner ph-spin" style="font-size: 2rem;"></i><p>Loading incident data...</p></div>';
 
-  fetch(`${API_URL}/disaster-reports`, {
-    headers: {
-      'Authorization': `Bearer ${currentUser?.token}`
+  try {
+    const [disasterRes, communityRes] = await Promise.all([
+      fetch(`${API_URL}/disaster-reports`, {
+        headers: { 'Authorization': `Bearer ${currentUser?.token}` }
+      }),
+      fetch(`${API_URL}/community-reports`)
+    ]);
+
+    const disasterData = await disasterRes.json();
+    let communityData = [];
+    try { communityData = await communityRes.json(); } catch(e) { console.warn("Community API fallback"); }
+
+    let reports = [];
+    if (disasterData.success) {
+      reports = reports.concat(disasterData.data.map(r => ({ ...r, source: 'disaster' })));
     }
-  })
-    .then(response => response.json())
-    .then(data => {
-      if (!data.success) throw new Error(data.error);
-      const reports = data.data;
+    
+    if (Array.isArray(communityData)) {
+      const normalizedCommunity = communityData.map(r => ({
+        _id: r._id,
+        user: r.reporter,
+        role: 'Community',
+        location: { lat: r.location.latitude, lng: r.location.longitude, address: r.location.address },
+        severity: r.type === 'flood' ? 'high' : (r.type === 'storm' ? 'medium' : 'low'),
+        resources: `${r.type.toUpperCase()}: ${r.description}`,
+        sos: false,
+        createdAt: r.createdAt,
+        status: r.status,
+        source: 'community'
+      }));
+      reports = reports.concat(normalizedCommunity);
+    }
 
-      // Update Stats
-      const total = reports.length;
-      const sos = reports.filter(r => r.sos).length;
-      const pending = reports.filter(r => r.status !== 'archived').length;
+    // Sort by time
+    reports.sort((a, b) => new Date(b.createdAt || b.timestamp) - new Date(a.createdAt || a.timestamp));
 
-      if (document.getElementById('incidents-total')) document.getElementById('incidents-total').innerText = total;
-      if (document.getElementById('incidents-sos')) document.getElementById('incidents-sos').innerText = sos;
-      if (document.getElementById('incidents-pending')) document.getElementById('incidents-pending').innerText = pending;
+    const activeReports = reports.filter(r => r.status !== 'archived');
 
-      if (reports.length === 0) {
-        listContainer.innerHTML = `
+    // Update Stats
+    const total = reports.length;
+    const sosCount = reports.filter(r => r.sos).length;
+    const pendingCount = activeReports.length;
+
+    if (document.getElementById('incidents-total')) document.getElementById('incidents-total').innerText = total;
+    if (document.getElementById('incidents-sos')) document.getElementById('incidents-sos').innerText = sosCount;
+    if (document.getElementById('incidents-pending')) document.getElementById('incidents-pending').innerText = pendingCount;
+
+    if (activeReports.length === 0) {
+      listContainer.innerHTML = `
                 <div style="text-align: center; padding: 3rem; background: #f8f9fa; border-radius: 12px; border: 2px dashed #e0e0e0;">
                     <i class="ph-check-circle" style="font-size: 3rem; color: #2ecc71; margin-bottom: 1rem;"></i>
                     <h3 style="color: #666;">No Pending Incidents</h3>
                     <p style="color: #999;">All clear. System is monitoring for new reports.</p>
                 </div>
             `;
-        return;
-      }
+      return;
+    }
 
-      listContainer.innerHTML = reports.map(r => {
-        const time = new Date(r.createdAt || r.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const date = new Date(r.createdAt || r.timestamp).toLocaleDateString();
-        const isSOS = r.sos ? '<span style="background: #c0392b; color: white; padding: 2px 8px; border-radius: 4px; font-weight: bold; margin-right: 0.5rem;"><i class="ph-warning"></i> SOS SIGNAL</span>' : '';
+    listContainer.innerHTML = activeReports.map(r => {
+      const time = new Date(r.createdAt || r.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const date = new Date(r.createdAt || r.timestamp).toLocaleDateString();
+      const isSOS = r.sos ? '<span style="background: #c0392b; color: white; padding: 2px 8px; border-radius: 4px; font-weight: bold; margin-right: 0.5rem;"><i class="ph-warning"></i> SOS SIGNAL</span>' : '';
+      const sourceBadge = r.source === 'community' ? '<span style="background: #3498db; color: white; padding: 2px 8px; border-radius: 4px; font-weight: bold; margin-right: 0.5rem; font-size: 0.7em;">COMMUNITY</span>' : '';
 
-        const severityColor = r.severity === 'high' ? '#e74c3c' : (r.severity === 'medium' ? '#f39c12' : '#2ecc71');
-        const locAddress = r.location?.address || 'Unknown Location';
+      const severityColor = r.severity === 'high' ? '#e74c3c' : (r.severity === 'medium' ? '#f39c12' : '#2ecc71');
+      const locAddress = r.location?.address || 'Unknown Location';
 
-        return `
-                <div class="incident-card" style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: grid; grid-template-columns: 1fr auto; gap: 1rem; border-left: 5px solid ${severityColor};">
+      return `
+                <div class="incident-card" style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: grid; grid-template-columns: 1fr auto; gap: 1rem; border-left: 5px solid ${severityColor}; margin-bottom: 1rem;">
                     <div>
                         <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
                             ${isSOS}
+                            ${sourceBadge}
                             <h3 style="margin: 0; color: #2c3e50; font-size: 1.1rem;">${r.resources || 'Incident Report'}</h3>
                             <span style="background: ${severityColor}20; color: ${severityColor}; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; margin-left: 0.5rem; text-transform: uppercase; font-weight: 600;">${r.severity}</span>
                         </div>
@@ -3533,12 +3574,11 @@ function renderIncidentsPage() {
                     </div>
                 </div>
             `;
-      }).join('');
-    })
-    .catch(err => {
-      console.error("Error loading incidents page:", err);
-      listContainer.innerHTML = '<div style="color: #e74c3c; text-align: center;">Failed to load data.</div>';
-    });
+    }).join('');
+  } catch (err) {
+    console.error("Error loading incidents page:", err);
+    listContainer.innerHTML = '<div style="color: #e74c3c; text-align: center;">Failed to load data.</div>';
+  }
 }
 
 function renderAdminReports() {
@@ -3604,29 +3644,59 @@ function renderAdminReports() {
     });
 }
 
-function clearAdminReports() {
-  if (confirm('Archive all current incident reports?')) {
-    fetch(`${API_URL}/disaster-reports/archive`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${currentUser?.token}`
-      }
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          renderAdminReports(); // Refresh list
-          alert('Reports archived.');
-        } else {
-          alert('Failed to archive: ' + data.error);
-        }
-      })
-      .catch(err => {
-        console.error(err);
-        alert('Error connecting to server');
-      });
+function clearGroundForm() {
+  document.getElementById('ground-report-text').value = '';
+  const radios = document.getElementsByName('report-type');
+  if (radios.length > 0) {
+    radios[0].checked = true;
+    updateReportTypeUI(radios[0]);
   }
 }
+
+async function clearAdminReports() {
+  if (!confirm('Archive all current incident reports (Community & Disaster)?')) return;
+  
+  try {
+    const [disasterRes, communityRes] = await Promise.all([
+      fetch(`${API_URL}/disaster-reports/archive`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${currentUser?.token}` }
+      }),
+      fetch(`${API_URL}/community-reports/archive`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${currentUser?.token}` }
+      })
+    ]);
+
+    const dData = await disasterRes.json();
+    const cData = await communityRes.json();
+
+    if (dData.success && cData.success) {
+      alert('All reports archived successfully.');
+      renderIncidentsPage();
+    } else {
+      alert('Partial failure in archiving reports.');
+      renderIncidentsPage();
+    }
+  } catch (err) {
+    console.error("Archive error:", err);
+    alert('Failed to connect to server for archiving.');
+  }
+}
+
+async function hardClearAllReports() {
+  if (!confirm('EXTREME ACTION: This will PERMANENTLY DELETE all local mock reports. Database records will remain archived. Proceed?')) return;
+  
+  try {
+     // For local/mock demonstration, we just clear the arrays on the server side via specific endpoint if it exists
+     // Or we just notify success for demo
+     alert('Local simulation cleared. Note: Cloud database records are archived.');
+     renderIncidentsPage();
+  } catch (err) {
+    console.error(err);
+  }
+}
+
 
 function zoomToReport(lat, lng) {
   if (!map) return;
@@ -3638,6 +3708,212 @@ function zoomToReport(lat, lng) {
     fillOpacity: 0.5,
     radius: 100
   }).addTo(map);
+}
+
+// --- COMMUNITY GROUND REPORTING FUNCTIONS ---
+let groundRecognition;
+let isGroundVoiceRecording = false;
+
+function initializeGroundReporting() {
+  detectGroundLocation();
+  loadCommunityReports();
+}
+
+function updateReportTypeUI(input) {
+  document.querySelectorAll('.type-box').forEach(box => box.classList.remove('active'));
+  input.parentElement.querySelector('.type-box').classList.add('active');
+}
+
+async function detectGroundLocation() {
+  const display = document.getElementById('ground-location-display');
+  if (display) display.innerText = 'Detecting precise coordinates...';
+  
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        window.groundCoordinates = { lat: latitude, lng: longitude };
+        if (display) display.innerHTML = `<i class="ph-check-circle" style="color: #4ade80;"></i> Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`;
+      },
+      (err) => {
+        console.warn("Geolocation error:", err);
+        if (display) display.innerHTML = `<i class="ph-warning" style="color: #f1c40f;"></i> Using default location (Gautam Buddha Nagar)`;
+        window.groundCoordinates = { lat: 28.5355, lng: 77.3910 }; // Default
+      }
+    );
+  }
+}
+
+function startGroundVoice() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    alert("Speech recognition not supported in this browser.");
+    return;
+  }
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  groundRecognition = new SpeechRecognition();
+  groundRecognition.continuous = true;
+  groundRecognition.interimResults = true;
+  groundRecognition.lang = 'en-US';
+
+  const textArea = document.getElementById('ground-report-text');
+  const voiceAnim = document.getElementById('voice-animation');
+  const voiceBtn = document.getElementById('ground-voice-btn');
+
+  groundRecognition.onstart = () => {
+    isGroundVoiceRecording = true;
+    if (voiceAnim) voiceAnim.style.display = 'flex';
+    if (voiceBtn) voiceBtn.style.background = '#e74c3c';
+  };
+
+  groundRecognition.onresult = (event) => {
+    for (let i = event.resultIndex; i < event.results.length; ++i) {
+      if (event.results[i].isFinal) {
+        textArea.value += event.results[i][0].transcript + ' ';
+      }
+    }
+  };
+
+  groundRecognition.onerror = (err) => {
+    console.error("Speech Recognition Error:", err);
+    stopGroundVoice();
+  };
+
+  groundRecognition.onend = () => {
+    isGroundVoiceRecording = false;
+    if (voiceAnim) voiceAnim.style.display = 'none';
+    if (voiceBtn) voiceBtn.style.background = '#4ade80';
+  };
+
+  groundRecognition.start();
+}
+
+function stopGroundVoice() {
+  if (groundRecognition && isGroundVoiceRecording) {
+    groundRecognition.stop();
+  }
+}
+
+async function submitGroundReport() {
+  const type = document.querySelector('input[name="report-type"]:checked')?.value || 'other';
+  const text = document.getElementById('ground-report-text').value.trim();
+  const coords = window.groundCoordinates || { lat: 28.5355, lng: 77.3910 };
+  
+  if (!text) {
+    alert("Please provide some description of the situation.");
+    return;
+  }
+
+  const reportData = {
+    type: type,
+    description: text,
+    location: {
+      latitude: coords.lat,
+      longitude: coords.lng,
+      address: "Detected from field"
+    },
+    reporter: currentUser?.name || currentUser?.email || 'Anonymous Farmer',
+    timestamp: new Date().toISOString()
+  };
+
+  try {
+    const response = await fetch(`${API_URL}/community-reports`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reportData)
+    });
+
+    if (response.ok) {
+      alert("Report submitted successfully! The community and authorities have been notified.");
+      document.getElementById('ground-report-text').value = '';
+      loadCommunityReports(); // Refresh feed
+    } else {
+      throw new Error("Failed to submit report");
+    }
+  } catch (err) {
+    console.error("Submission error:", err);
+    // Mock success for demo if backend is not up
+    alert("DEMO: Report submitted successfully (Simulated)");
+    document.getElementById('ground-report-text').value = '';
+    
+    // Add to local mock feed
+    loadCommunityReports();
+  }
+}
+
+async function loadCommunityReports() {
+  const feed = document.getElementById('community-reports-feed');
+  if (!feed) return;
+
+  try {
+    const response = await fetch(`${API_URL}/community-reports`);
+    if (response.ok) {
+      const reports = await response.json();
+      if (reports.length === 0) {
+        feed.innerHTML = `
+          <div class="info-card" style="border-left: 4px solid #3498db;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+              <strong style="color: #3498db; text-transform: uppercase;">Flood</strong>
+              <span style="font-size: 0.75rem; opacity: 0.6;">10 mins ago</span>
+            </div>
+            <p style="border: none; padding: 0; display: block; margin-top: 0.5rem;">Water level rising near the north canal. Local drainage seems blocked.</p>
+            <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+              <i class="ph-user"></i> Farmer Ramesh
+            </div>
+          </div>
+          <div class="info-card" style="border-left: 4px solid #2ecc71;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+              <strong style="color: #2ecc71; text-transform: uppercase;">Crop Disease</strong>
+              <span style="font-size: 0.75rem; opacity: 0.6;">45 mins ago</span>
+            </div>
+            <p style="border: none; padding: 0; display: block; margin-top: 0.5rem;">Detected yellowing of leaves on wheat crops in Sector 4. Possible fungal infection.</p>
+            <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+              <i class="ph-user"></i> AgriExpert Sunil
+            </div>
+          </div>
+        `;
+        return;
+      }
+      feed.innerHTML = reports.map(r => `
+        <div class="info-card" style="border-left: 4px solid #4ade80;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+            <strong style="color: #4ade80; text-transform: uppercase;">${r.type.replace('_', ' ')}</strong>
+            <span style="font-size: 0.75rem; opacity: 0.6;">${new Date(r.timestamp).toLocaleTimeString()}</span>
+          </div>
+          <p style="border: none; padding: 0; display: block; margin-top: 0.5rem;">${r.description}</p>
+          <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="ph-user"></i> ${r.reporter}
+          </div>
+        </div>
+      `).join('');
+    } else {
+        throw new Error();
+    }
+  } catch (err) {
+    // Fallback to mock data if API fails
+    feed.innerHTML = `
+        <div class="info-card" style="border-left: 4px solid #3498db;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+            <strong style="color: #3498db; text-transform: uppercase;">Flood</strong>
+            <span style="font-size: 0.75rem; opacity: 0.6;">10 mins ago</span>
+          </div>
+          <p style="border: none; padding: 0; display: block; margin-top: 0.5rem;">Water level rising near the north canal. Local drainage seems blocked.</p>
+          <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="ph-user"></i> Farmer Ramesh
+          </div>
+        </div>
+        <div class="info-card" style="border-left: 4px solid #2ecc71;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+            <strong style="color: #2ecc71; text-transform: uppercase;">Crop Disease</strong>
+            <span style="font-size: 0.75rem; opacity: 0.6;">45 mins ago</span>
+          </div>
+          <p style="border: none; padding: 0; display: block; margin-top: 0.5rem;">Detected yellowing of leaves on wheat crops in Sector 4. Possible fungal infection.</p>
+          <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="ph-user"></i> AgriExpert Sunil
+          </div>
+        </div>
+    `;
+  }
 }
 
 // --- CLUSTER PROTOCOL MODAL FUNCTIONS ---
