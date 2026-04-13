@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenWeather API Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+
+        .status.loading {
+            background: rgba(255, 193, 7, 0.3);
+            border: 2px solid #ffc107;
+        }
+
+        .status.success {
+            background: rgba(76, 175, 80, 0.3);
+            border: 2px solid #4caf50;
+        }
+
+        .status.error {
+            background: rgba(244, 67, 54, 0.3);
+            border: 2px solid #f44336;
+        }
+
+        .weather-display {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .weather-main {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .weather-icon {
+            font-size: 4rem;
+        }
+
+        .weather-temp {
+            font-size: 3rem;
+            font-weight: bold;
+        }
+
+        .weather-desc {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .weather-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .detail-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        button {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        pre {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            overflow-x: auto;
+            font-size: 12px;
+            display: none;
+        }
+
+        .show {
+            display: block !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>
+            <span>🌤️</span>
+            OpenWeather API Test
+        </h1>
+
+        <p>Testing OpenWeather API integration for AgriUrbanAI Dashboard</p>
+
+        <div id="status" class="status loading">
+            ⏳ Click "Test API" to start...
+        </div>
+
+        <button onclick="testWeatherAPI()">🔄 Test API</button>
+        <button onclick="toggleRawData()">📋 Toggle Raw Data</button>
+
+        <div id="weather-display" class="weather-display">
+            <div class="weather-main">
+                <div class="weather-icon" id="weather-icon">☀️</div>
+                <div>
+                    <div class="weather-temp" id="weather-temp">--°C</div>
+                    <div class="weather-desc" id="weather-desc">Loading...</div>
+                </div>
+            </div>
+
+            <div class="weather-details">
+                <div class="detail-item">
+                    <strong>🌡️ Feels Like:</strong> <span id="feels-like">--</span>°C
+                </div>
+                <div class="detail-item">
+                    <strong>💧 Humidity:</strong> <span id="humidity">--</span>%
+                </div>
+                <div class="detail-item">
+                    <strong>💨 Wind Speed:</strong> <span id="wind">--</span> km/h
+                </div>
+                <div class="detail-item">
+                    <strong>☁️ Clouds:</strong> <span id="clouds">--</span>%
+                </div>
+                <div class="detail-item">
+                    <strong>👁️ Visibility:</strong> <span id="visibility">--</span> km
+                </div>
+                <div class="detail-item">
+                    <strong>🎚️ Pressure:</strong> <span id="pressure">--</span> hPa
+                </div>
+            </div>
+        </div>
+
+        <pre id="raw-data"></pre>
+    </div>
+
+    <script>
+        const OPENWEATHER_API_KEY = '45433333a6d1a566b3cdeecff33e3409';
+        const OPENWEATHER_BASE_URL = 'https://api.openweathermap.org/data/2.5/weather';
+
+        // Delhi coordinates (same as dashboard.js)
+        const DELHI_LAT = 28.6139;
+        const DELHI_LON = 77.2090;
+
+        let rawDataVisible = false;
+
+        async function testWeatherAPI() {
+            const statusEl = document.getElementById('status');
+            const weatherDisplay = document.getElementById('weather-display');
+            const rawDataEl = document.getElementById('raw-data');
+
+            // Reset UI
+            statusEl.className = 'status loading';
+            statusEl.textContent = '⏳ Fetching weather data from OpenWeather API...';
+            weatherDisplay.classList.remove('show');
+
+            try {
+                const url = `${OPENWEATHER_BASE_URL}?lat=${DELHI_LAT}&lon=${DELHI_LON}&appid=${OPENWEATHER_API_KEY}&units=metric`;
+
+                console.log('API URL:', url);
+                const startTime = Date.now();
+
+                const response = await fetch(url);
+                const responseTime = Date.now() - startTime;
+
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                console.log('API Response:', data);
+
+                // Display success
+                statusEl.className = 'status success';
+                statusEl.innerHTML = `✅ Success! Retrieved weather data in ${responseTime}ms<br>Location: ${data.name}, ${data.sys.country}`;
+
+                // Show raw data
+                rawDataEl.textContent = JSON.stringify(data, null, 2);
+
+                // Map weather icon
+                const iconMap = {
+                    'Clear': '☀️',
+                    'Clouds': '☁️',
+                    'Rain': '🌧️',
+                    'Drizzle': '🌦️',
+                    'Thunderstorm': '⛈️',
+                    'Snow': '❄️',
+                    'Mist': '🌫️',
+                    'Fog': '🌫️',
+                    'Haze': '🌫️'
+                };
+                const emoji = iconMap[data.weather[0].main] || '🌤️';
+
+                // Format description
+                const description = data.weather[0].description
+                    .split(' ')
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(' ');
+
+                // Update UI
+                document.getElementById('weather-icon').textContent = emoji;
+                document.getElementById('weather-temp').textContent = Math.round(data.main.temp) + '°C';
+                document.getElementById('weather-desc').textContent = description;
+                document.getElementById('feels-like').textContent = Math.round(data.main.feels_like);
+                document.getElementById('humidity').textContent = data.main.humidity;
+                document.getElementById('wind').textContent = Math.round(data.wind.speed * 3.6); // m/s to km/h
+                document.getElementById('clouds').textContent = data.clouds.all;
+                document.getElementById('visibility').textContent = (data.visibility / 1000).toFixed(1);
+                document.getElementById('pressure').textContent = data.main.pressure;
+
+                weatherDisplay.classList.add('show');
+
+            } catch (error) {
+                console.error('Error:', error);
+                statusEl.className = 'status error';
+                statusEl.innerHTML = `❌ Error: ${error.message}<br><br>Possible causes:<br>• Invalid API key<br>• Network/CORS issue<br>• API service down`;
+                rawDataEl.textContent = error.stack;
+            }
+        }
+
+        function toggleRawData() {
+            const rawDataEl = document.getElementById('raw-data');
+            rawDataVisible = !rawDataVisible;
+            rawDataEl.style.display = rawDataVisible ? 'block' : 'none';
+        }
+
+        // Auto-test on page load
+        window.addEventListener('load', () => {
+            setTimeout(testWeatherAPI, 500);
+        });
+    </script>
+</body>
+
+</html>

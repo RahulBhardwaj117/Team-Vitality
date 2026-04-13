@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test - Heatwave Prediction</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .test-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background: #45a049;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-left: 4px solid #4CAF50;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+
+        .error {
+            border-left-color: #f44336;
+            background: #ffebee;
+        }
+
+        .loading {
+            color: #666;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🌡️ Heatwave API Test Page</h1>
+
+    <div class="test-card">
+        <h2>Test 1: Health Check</h2>
+        <button onclick="testHealth()">Test /health Endpoint</button>
+        <div id="health-result" class="result" style="display:none;"></div>
+    </div>
+
+    <div class="test-card">
+        <h2>Test 2: Weather Forecast</h2>
+        <button onclick="testWeather()">Test /predict/weather/raw</button>
+        <div id="weather-result" class="result" style="display:none;"></div>
+    </div>
+
+    <div class="test-card">
+        <h2>Test 3: Heatwave Prediction</h2>
+        <button onclick="testHeatwave()">Test /predict/heatwave/integrated</button>
+        <div id="heatwave-result" class="result" style="display:none;"></div>
+    </div>
+
+    <script>
+        const FASTAPI_URL = 'http://localhost:8000';
+
+        async function testHealth() {
+            const resultDiv = document.getElementById('health-result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result loading';
+            resultDiv.textContent = 'Testing...';
+
+            try {
+                const response = await fetch(`${FASTAPI_URL}/health`);
+                const data = await response.json();
+
+                resultDiv.className = 'result';
+                resultDiv.textContent = `✅ SUCCESS!\nStatus: ${response.status}\n\nResponse:\n${JSON.stringify(data, null, 2)}`;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ ERROR!\n${error.message}\n\nMake sure FastAPI is running on port 8000`;
+            }
+        }
+
+        async function testWeather() {
+            const resultDiv = document.getElementById('weather-result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result loading';
+            resultDiv.textContent = 'Testing...';
+
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const response = await fetch(`${FASTAPI_URL}/predict/weather/raw?start_date=${today}`);
+                const data = await response.json();
+
+                resultDiv.className = 'result';
+                resultDiv.textContent = `✅ SUCCESS!\nStatus: ${response.status}\n\nForecast Days: ${data.forecast ? data.forecast.length : 0}\n\nSample Data:\n${JSON.stringify(data.forecast ? data.forecast[0] : {}, null, 2)}`;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ ERROR!\n${error.message}`;
+            }
+        }
+
+        async function testHeatwave() {
+            const resultDiv = document.getElementById('heatwave-result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result loading';
+            resultDiv.textContent = 'Testing...\n1. Fetching weather forecast...';
+
+            try {
+                // Step 1: Get weather forecast
+                const today = new Date().toISOString().split('T')[0];
+                const weatherResponse = await fetch(`${FASTAPI_URL}/predict/weather/raw?start_date=${today}`);
+                if (!weatherResponse.ok) throw new Error('Weather API failed');
+                const weatherResult = await weatherResponse.json();
+
+                resultDiv.textContent = 'Testing...\n2. Calling heatwave prediction...';
+
+                // Step 2: Call heatwave prediction
+                const payload = {
+                    forecast: weatherResult.forecast.map(day => ({
+                        day: day.date,
+                        condition: day.condition || 'Clear',
+                        rain_chance: day.rain_chance || 0,
+                        temp: day.temp || 30,
+                        icon: day.icon || '☀️',
+                        humidity: day.humidity || 50,
+                        wind: day.wind || 10,
+                        min_temp: day.min_temp || 20,
+                        max_temp: day.temp || 30
+                    })),
+                    location: 'Delhi'
+                };
+
+                console.log('Sending payload:', payload);
+
+                const heatwaveResponse = await fetch(`${FASTAPI_URL}/predict/heatwave/integrated`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!heatwaveResponse.ok) {
+                    const errorText = await heatwaveResponse.text();
+                    throw new Error(`API returned ${heatwaveResponse.status}: ${errorText}`);
+                }
+
+                const result = await heatwaveResponse.json();
+
+                resultDiv.className = 'result';
+                resultDiv.textContent = `✅ HEATWAVE PREDICTION SUCCESS!\n\nRisk Level: ${result.risk_level}\nPeak Temp: ${result.peak_temp}°C\nDuration: ${result.duration} days\nConfidence: ${result.confidence}%\n\nFull Response:\n${JSON.stringify(result, null, 2)}`;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ ERROR!\n${error.message}\n\nCheck browser console (F12) for details`;
+                console.error('Heatwave test error:', error);
+            }
+        }
+
+        // Auto-run health check on page load
+        window.onload = () => {
+            console.log('Test page loaded. FastAPI URL:', FASTAPI_URL);
+            setTimeout(testHealth, 500);
+        };
+    </script>
+</body>
+
+</html>

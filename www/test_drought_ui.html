@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Drought API Test</title>
+    <style>
+        body {
+            font-family: Arial;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .result {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #27ae60;
+        }
+
+        .error {
+            color: #e74c3c;
+        }
+
+        .success {
+            color: #27ae60;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🧪 Drought API Direct Test</h1>
+    <button onclick="testAPI()">Test Drought API</button>
+    <div id="results"></div>
+
+    <script>
+        async function testAPI() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="result">⏳ Testing...</div>';
+
+            const payload = {
+                forecast: [
+                    { day: "2024-12-04", condition: "Clear", rain_chance: 10, temp: 25, icon: "☀️", humidity: 60, wind: 10, min_temp: 20, max_temp: 30 },
+                    { day: "2024-12-05", condition: "Clear", rain_chance: 5, temp: 26, icon: "☀️", humidity: 55, wind: 12, min_temp: 21, max_temp: 31 }
+                ],
+                location: "Delhi"
+            };
+
+            try {
+                console.log('📤 Calling API...');
+                const response = await fetch('http://localhost:8000/predict/drought/integrated', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                console.log('📥 Response status:', response.status);
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('✅ Data:', data);
+
+                    resultsDiv.innerHTML = `
+                        <div class="result success">
+                            <h2>✅ API WORKING!</h2>
+                            <p><strong>Risk Level:</strong> ${data.risk_level}</p>
+                            <p><strong>Soil Moisture:</strong> ${data.soil_moisture}</p>
+                            <p><strong>Rainfall Deficit:</strong> ${data.rainfall_deficit}</p>
+                            <p><strong>Dry Days:</strong> ${data.dry_days}</p>
+                            <p><strong>Avg Humidity:</strong> ${data.avg_humidity}%</p>
+                            <p><strong>Confidence:</strong> ${data.confidence}%</p>
+                            <hr>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultsDiv.innerHTML = `<div class="result error">❌ API Error: ${response.statusText}</div>`;
+                }
+            } catch (error) {
+                console.error('💥 Error:', error);
+                resultsDiv.innerHTML = `<div class="result error">💥 Exception: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+
+</html>

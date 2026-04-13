@@ -366,8 +366,6 @@
       width: 100%;
       min-height: 100vh;
       min-height: 100vh;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
       z-index: 100;
     }
 
@@ -386,7 +384,7 @@
       min-height: 100vh;
       min-height: 100vh;
       overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
+      overflow-x: hidden;
       position: relative;
     }
 

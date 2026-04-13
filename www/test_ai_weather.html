@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Weather Test - Direct Python</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        pre {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+
+        button {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🤖 AI Weather Prediction Test</h1>
+
+    <p>Testing direct Python script execution for weather predictions</p>
+
+    <button onclick="testPythonScript()">Test AI Predictions</button>
+    <button onclick="testAPI()">Test API Endpoint</button>
+
+    <div id="output"></div>
+
+    <script>
+        async function testPythonScript() {
+            const output = document.getElementById('output');
+            output.innerHTML = '<p>⏳ Running Python script...</p>';
+
+            try {
+                // This would need to be run from backend
+                output.innerHTML = `
+          <h3>Manual Test Required</h3>
+          <p>Run this command in terminal:</p>
+          <pre>cd /d d:\\Python\\ai8\\TeamVitality\\AU\\backend\\fastapi\\predictions
+python -c "import weather_forcast_enhanced; result = weather_forcast_enhanced.get_weekly_forecast('2025-11-30'); print(result)"</pre>
+        `;
+            } catch (error) {
+                output.innerHTML = `<p style="color: #ff6b6b">❌ Error: ${error.message}</p>`;
+            }
+        }
+
+        async function testAPI() {
+            const output = document.getElementById('output');
+            output.innerHTML = '<p>⏳ Calling API...</p>';
+
+            try {
+                const response = await fetch('http://localhost:8000/health');
+                const data = await response.json();
+
+                output.innerHTML = `
+          <h3>✅ API Health Check</h3>
+          <pre>${JSON.stringify(data, null, 2)}</pre>
+          
+          <p>Now try the weekly forecast endpoint (currently has validation issues):</p>
+          <p><strong>URL:</strong> http://localhost:8000/predict/weather/weekly?start_date=2025-11-30</p>
+        `;
+            } catch (error) {
+                output.innerHTML = `<p style="color: #ff6b6b">❌ API Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+
+</html>

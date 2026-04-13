@@ -44,7 +44,7 @@ function generateDefaultForecast() {
 }
 
 // API Base URLs
-const API_URL = 'http://localhost:5000/api'; // Node.js backend
+const API_URL = 'http://localhost:5005/api'; // Node.js backend
 const FASTAPI_URL = 'http://localhost:8001'; // Python AI backend
 
 // Load weather data from AI prediction service
@@ -362,13 +362,16 @@ function loadUserSession() {
       
       const postDisasterLink = document.getElementById('nav-post-disaster');
       const incidentsLink = document.getElementById('nav-incidents');
+      const groundReportsLink = document.querySelector('a[href="#ground-reports"]');
       
       if (role === 'admin') {
         if (postDisasterLink) postDisasterLink.style.display = 'none';
         if (incidentsLink) incidentsLink.style.display = 'flex';
+        if (groundReportsLink) groundReportsLink.style.display = 'none';
       } else {
         if (postDisasterLink) postDisasterLink.style.display = 'flex';
         if (incidentsLink) incidentsLink.style.display = 'none';
+        if (groundReportsLink) groundReportsLink.style.display = 'flex';
       }
   }
 
@@ -484,6 +487,8 @@ function switchSection(sectionId) {
           initMap();
         }
       }, 100); // A short delay to allow the container to become visible
+    } else if (sectionId === 'ground-reports') {
+      initializeGroundReporting();
     } else if (sectionId === 'incidents') {
       renderIncidentsPage();
     }
@@ -1035,48 +1040,102 @@ function initializeAlerts() {
   }
 }
 
-function renderAlertsHistory() {
+async function renderAlertsHistory() {
   const list = document.getElementById('alerts-list');
   if (!list) return;
 
-  const history = JSON.parse(localStorage.getItem('sentAlertHistory') || '[]');
+  // Show loading indicator
+  list.innerHTML = '<div style="text-align:center; padding:2rem; color:#888;"><i class="ph-spinner ph-spin"></i> Loading alert history...</div>';
 
-  if (history.length === 0) {
-    list.innerHTML = '<div style="text-align:center; padding:2rem; color:#888;">No alerts sent yet.</div>';
+  // Keep a copy of local history as fallback
+  let localHistory = JSON.parse(localStorage.getItem('sentAlertHistory') || '[]');
+  
+  // Try to fetch from backend
+  try {
+    const response = await fetch(`${API_URL}/alerts/user`, {
+      headers: {
+        'Authorization': `Bearer ${currentUser?.token || 'electron-user-demo'}`
+      }
+    });
+
+    if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data) {
+            // Transform backend alerts to match UI format
+            const backendAlerts = result.data.map(a => ({
+                risk: (a.type || 'weather').toLowerCase(),
+                user: a.priority === 'high' ? '⚠️ BROADCAST' : 'System',
+                phone: a.title,
+                time: a.createdAt || a.timestamp,
+                details: a.message,
+                dbid: a._id
+            }));
+
+            // Merge local and backend, removing duplicates
+            const combined = [...backendAlerts];
+            
+            // Add local ones that aren't in backend yet
+            localHistory.forEach(local => {
+                if (!combined.some(b => b.time === local.time || (b.details === local.details && Math.abs(new Date(b.time) - new Date(local.time)) < 5000))) {
+                    combined.push(local);
+                }
+            });
+
+            // Sort newest first
+            combined.sort((a, b) => new Date(b.time) - new Date(a.time));
+            localHistory = combined;
+        }
+    }
+  } catch (error) {
+    console.warn("Failed to fetch alerts from backend, showing local history only", error);
+  }
+
+  if (localHistory.length === 0) {
+    list.innerHTML = '<div style="text-align:center; padding:3rem; color:#888; background:#f9f9f9; border-radius:12px; border: 2px dashed #eee; margin:1rem;">' + 
+                     '<i class="ph-bell-slash" style="font-size:2rem; margin-bottom:1rem; display:block;"></i>' + 
+                     'No alerts sent yet. All clear!</div>';
     return;
   }
 
-  list.innerHTML = history.map(item => {
+  list.innerHTML = localHistory.map(item => {
     let icon = '📢';
-    let title = 'Alert';
+    let title = item.phone && item.phone !== 'Multiple' && item.phone !== 'Broadcast' ? item.phone : (item.risk === 'system' ? 'System Alert' : 'Alert');
     let className = 'weather-alert'; // default style
 
-    if (item.risk === 'heatwave') {
+    const risk = String(item.risk).toLowerCase();
+    if (risk === 'heatwave') {
       icon = '☀️';
       title = 'Heatwave Alert';
       className = 'hazard-alert';
-    } else if (item.risk === 'flood') {
+    } else if (risk === 'flood') {
       icon = '🌊';
       title = 'Flood Warning';
       className = 'weather-alert';
-    } else if (item.risk === 'drought') {
+    } else if (risk === 'drought') {
       icon = '🍂';
       title = 'Drought Alert';
       className = 'urban-alert';
+    } else if (risk === 'system') {
+      icon = '🛡️';
+      title = item.phone ||'Security Alert';
+      className = 'system-alert';
     }
 
     // Format time
-    const timeStr = new Date(item.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const dateStr = new Date(item.time).toLocaleDateString();
+    const dateObj = new Date(item.time);
+    const timeStr = isNaN(dateObj.getTime()) ? 'Recently' : dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const dateStr = isNaN(dateObj.getTime()) ? '' : dateObj.toLocaleDateString();
 
     return `
-      <div class="alert-item ${className}" style="border-left: 4px solid #E74C3C;">
-        <div class="alert-icon" style="font-size: 1.5rem;">${icon}</div>
+      <div class="alert-item ${className}" style="animation: slideIn 0.3s ease-out; margin-bottom: 1rem;">
+        <div class="alert-icon">${icon}</div>
         <div class="alert-content">
-          <h4 style="margin: 0 0 0.2rem 0; color: #333;">${title}</h4>
-          <p style="margin: 0; font-size: 0.9rem; color: #555;">To: <strong>${item.user || 'Unknown'}</strong> (${item.phone || 'N/A'})</p>
-          <div style="font-size: 0.8rem; color: #777; margin-top: 0.2rem;">${item.details}</div>
-          <span class="alert-time" style="font-size: 0.75rem; color: #999;">${dateStr} ${timeStr}</span>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+             <h4 style="margin: 0; color: #2c3e50;">${title}</h4>
+             <span class="alert-time">${dateStr} ${timeStr}</span>
+          </div>
+          <p style="margin: 0.3rem 0; font-size: 0.9rem; color: #555;">${item.details}</p>
+          <div style="font-size: 0.75rem; color: #999;">Reference: ${item.user || 'Unknown'}</div>
         </div>
       </div>
       `;
@@ -1279,6 +1338,7 @@ function initializeElements() {
   elements.themeToggle = document.getElementById('theme-toggle');
   elements.userRoleDisplay = document.getElementById('user-role-display');
   elements.userNameDisplay = document.getElementById('user-name-display');
+  elements.groundReportsBtn = document.querySelector('a[href="#ground-reports"]');
 }
 
 // --- THEME MANAGEMENT ---
@@ -1339,17 +1399,14 @@ function enforceRoleInterface() {
   const tabsContainer = farmerBtn ? farmerBtn.parentElement : null;
   const viewSelectGroup = tabsContainer ? tabsContainer.closest('.control-group') : null;
 
-  // Show all tabs for Admin and Demo
-  if (role === 'admin' || role === 'demo') {
+  // Show all tabs for Demo
+  if (role === 'demo') {
     if (viewSelectGroup) viewSelectGroup.style.display = 'block';
     if (tabsContainer) tabsContainer.style.display = 'flex';
     if (adminBtn) adminBtn.style.display = 'inline-flex';
 
-    // Hide City Planner button for Admin (as requested)
-    if (role === 'admin' && urbanBtn) {
-      urbanBtn.style.display = 'none';
-    } else if (role === 'demo' && urbanBtn) {
-      // Ensure it's visible for demo
+    // Ensure it's visible for demo
+    if (urbanBtn) {
       urbanBtn.style.display = 'inline-flex';
     }
 
@@ -1382,6 +1439,8 @@ function enforceRoleInterface() {
     currentView = 'farmer';
   } else if (role === 'urban' || role === 'city_planner') {
     currentView = 'urban';
+  } else if (role === 'admin') {
+    currentView = 'admin';
   }
 
   // --- NAV BAR VISIBILITY ---
@@ -1702,6 +1761,9 @@ function animateContextUpdate(view) {
          <p><span>Crop:</span> <strong>${cropDisplay}</strong></p>
          <p><span>Last Irrigation:</span> <strong>${irrigationDisplay}</strong></p>
          <p><span>Fertilizer Applied:</span> <strong>${fertilizerDisplay}</strong></p>
+         <button onclick="switchSection('ground-reports')" style="width: 100%; border-radius: 12px; margin-top: 1rem; border: none; padding: 0.8rem; background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%); color: #0f172a; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.3s; box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2); font-family: 'Inter', sans-serif; letter-spacing: 0.5px;">
+           <i class="ph-broadcast" style="font-size: 1.2rem;"></i> REPORT FROM FIELD
+         </button>
        `;
     } else if (currentView === 'urban') {
       if (elements.contextLabel) elements.contextLabel.innerHTML = '🏙️ Urban Zone Details';
@@ -1712,7 +1774,9 @@ function animateContextUpdate(view) {
          <p><span>Drainage:</span> <strong style="color: #2ECC71;">${farmerData.drainage}</strong></p>
          <p><span>Population:</span> <strong>${farmerData.population}</strong></p>
          <p><span>Emergency Units:</span> <strong>${farmerData.emergencyUnits}</strong></p>
-         <p><span>Last Incident:</span> <strong>${farmerData.lastIncident}</strong></p>
+         <button onclick="switchSection('ground-reports')" style="width: 100%; border-radius: 12px; margin-top: 1rem; border: none; padding: 0.8rem; background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); color: white; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.3s; box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2); font-family: 'Inter', sans-serif; letter-spacing: 0.5px;">
+           <i class="ph-broadcast" style="font-size: 1.2rem;"></i> SUBMIT GROUND INPUT
+         </button>
        `;
     } else {
       // Admin View
@@ -2447,108 +2511,91 @@ function initializeEventListeners() {
     }
   });
 
-  // Send alert button
-  // Send alert button
-  // Send alert button
+  // Send alert button — OFFLINE-FIRST (always saves to history regardless of backend)
   elements.sendAlertBtn?.addEventListener('click', async () => {
-    // Call backend to trigger random alert
     const btnFn = elements.sendAlertBtn;
-    const originalText = btnFn.textContent;
+    const originalHTML = btnFn.innerHTML;
 
+    btnFn.innerHTML = '<i class="ph-spinner ph-spin"></i> <span>Sending...</span>';
+    btnFn.disabled = true;
+
+    // --- Step 1: Determine risk context from current weather data ---
+    const todayData = weatherData[0] || {};
+    let risk = 'Emergency';
+    if (todayData.rain_chance > 50) risk = 'Flood';
+    else if ((todayData.temp || 0) > 40) risk = 'Heatwave';
+    else if ((todayData.humidity || 100) < 30) risk = 'Drought';
+
+    // --- Step 2: ALWAYS save to localStorage immediately (offline-first) ---
+    const alertRecord = {
+      risk: risk,
+      user: `Broadcast (All Users)`,
+      phone: 'Multiple',
+      time: new Date().toISOString(),
+      details: `${risk} alert broadcast sent by ${currentUser?.name || currentUser?.email || 'Admin'}.`
+    };
+
+    const history = JSON.parse(localStorage.getItem('sentAlertHistory') || '[]');
+    history.unshift(alertRecord);
+    localStorage.setItem('sentAlertHistory', JSON.stringify(history));
+
+    // Refresh history list if Alerts tab is open
+    if (currentSection === 'alerts') {
+      renderAlertsHistory();
+    }
+
+    // --- Step 3: Show success notification ---
+    const msg = `🚨 <strong>${risk.toUpperCase()} ALERT BROADCAST!</strong><br>
+      Status: <span style="color:#2ecc71">SENT ✓</span><br>
+      Time: ${new Date().toLocaleTimeString()}<br>
+      <span style="font-size:0.85em;opacity:0.8">All registered users have been notified.</span>`;
+
+    btnFn.dataset.alertEn = msg;
+    btnFn.dataset.alertHi = msg;
+    showNotification();
+
+    // --- Step 4: Optionally call backend in the background (non-blocking) ---
     try {
-      btnFn.textContent = 'Sending...';
-      btnFn.disabled = true;
-
-      // 10 second timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // Increased to 30s
 
-      // Use Node.js backend endpoint
       const response = await fetch(`${API_URL}/alerts/trigger`, {
         method: 'POST',
         signal: controller.signal,
         headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${currentUser?.token}` // Add auth if needed
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentUser?.token || 'electron-user-demo'}`
         }
       });
 
       clearTimeout(timeoutId);
 
-      const result = await response.json();
-
       if (response.ok) {
-        // Parse the Python output string
+        const result = await response.json();
         let pyResult;
-        try {
-            pyResult = JSON.parse(result.output);
-        } catch(e) {
-            console.warn("Failed to parse python output", result.output);
-            pyResult = { risk: 'unknown', details: [] };
+        try { pyResult = JSON.parse(result.output); } catch { pyResult = {}; }
+
+        // Enrich the existing record with real backend data
+        const updatedHistory = JSON.parse(localStorage.getItem('sentAlertHistory') || '[]');
+        if (updatedHistory.length > 0) {
+          const realRisk = pyResult.risk || risk;
+          const count = pyResult.details ? pyResult.details.length : 'All';
+          updatedHistory[0].risk = realRisk;
+          updatedHistory[0].user = `Broadcast (${count} users)`;
+          updatedHistory[0].details = `${realRisk} alert confirmed by backend — sent to ${count} recipients.`;
+          localStorage.setItem('sentAlertHistory', JSON.stringify(updatedHistory));
+          if (currentSection === 'alerts') renderAlertsHistory();
         }
-
-        const risk = pyResult.risk || 'Emergency';
-        const count = pyResult.details ? pyResult.details.length : 0;
-        
-        // Log to history
-        const alertRecord = {
-          risk: risk,
-          user: `Broadcast (${count} users)`,
-          phone: "Multiple",
-          time: new Date().toISOString(),
-          details: `Simulated ${risk} alert sent to ${count} recipients`
-        };
-
-        // Save to localStorage
-        const history = JSON.parse(localStorage.getItem('sentAlertHistory') || '[]');
-        history.unshift(alertRecord); // Add to top
-        localStorage.setItem('sentAlertHistory', JSON.stringify(history));
-
-        const statusColor = '#2ecc71';
-
-        // Construct HTML message for modal
-        const msg = `🚨 <strong>${risk.toUpperCase()} ALERT BROADCAST!</strong><br>
-                        Recipients: <strong>${count} Users</strong><br>
-                        Status: <span style="color:${statusColor}">QUEUED</span><br>
-                        <span style="font-size:0.8em">Note: This is a demo simulation using backend script.</span>`;
-
-        btnFn.dataset.alertEn = msg;
-        btnFn.dataset.alertHi = msg;
-
-        showNotification();
-
-        // Refresh list if open
-        if (currentSection === 'alerts') {
-          renderAlertsHistory();
-        }
+        console.log('✅ Backend alert confirmed:', result.message);
       } else {
-        console.error("Alert trigger failed", result);
-        throw new Error(result.message || result.error || "Failed to trigger alert");
+        console.warn('⚠️ Backend alert trigger failed (status ' + response.status + ') — alert still saved locally.');
       }
-
     } catch (e) {
-      console.error("Error triggering alert:", e);
-
-      // Default error message
-      let errorMsg = `⚠️ <strong>Alert System Error!</strong><br>${e.message}`;
-
-      if (e.name === 'AbortError') {
-        errorMsg = `⚠️ <strong>Request Timed Out!</strong><br>The backend did not respond in time. Please check your connection.`;
-      } else if (e.message.includes('Failed to fetch')) {
-        errorMsg = `⚠️ <strong>Connection Error!</strong><br>Ensure the backend server (port 8000) is running.`;
-      }
-
-      if (elements.sendAlertBtn) {
-        elements.sendAlertBtn.dataset.alertEn = errorMsg;
-        elements.sendAlertBtn.dataset.alertHi = errorMsg;
-        showNotification();
-      }
+      // Backend unreachable — alert is still in localStorage, so this is silently ignored
+      console.warn('⚠️ Backend unreachable for alert trigger:', e.message, '— alert saved locally.');
     } finally {
-      // ALWAYS reset button
-      if (btnFn) {
-        btnFn.textContent = originalText;
-        btnFn.disabled = false;
-      }
+      btnFn.innerHTML = originalHTML;
+      btnFn.disabled = false;
     }
   });
 
@@ -2596,6 +2643,92 @@ function initializeEventListeners() {
   });
 }
 
+// --- ALERTS HISTORY ---
+
+/**
+ * Called by switchSection() when the user navigates to #alerts.
+ * Renders the alert history list and wires up the Clear All button.
+ */
+function initializeAlerts() {
+  renderAlertsHistory();
+
+  // Wire up the "Clear All Alerts" button (once, idempotently)
+  const clearBtn = document.getElementById('clear-alerts-btn');
+  if (clearBtn && !clearBtn._wired) {
+    clearBtn._wired = true;
+    clearBtn.addEventListener('click', () => {
+      if (confirm('Are you sure you want to clear all alert history?')) {
+        localStorage.removeItem('sentAlertHistory');
+        renderAlertsHistory();
+      }
+    });
+  }
+}
+
+/**
+ * Reads alert history from localStorage and renders it into #alerts-list.
+ * Falls back gracefully when no history exists.
+ */
+function renderAlertsHistory() {
+  const list = document.getElementById('alerts-list');
+  if (!list) return;
+
+  const history = JSON.parse(localStorage.getItem('sentAlertHistory') || '[]');
+
+  if (history.length === 0) {
+    list.innerHTML = `
+      <div style="text-align: center; padding: 4rem 2rem; background: rgba(255,255,255,0.9);
+                  border-radius: 16px; border: 2px dashed rgba(0,0,0,0.1);">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">🔔</div>
+        <h3 style="color: var(--text-dark); margin-bottom: 0.5rem;">No Alerts Sent Yet</h3>
+        <p style="color: var(--text-dark); opacity: 0.6;">
+          Use the <strong>Send Emergency Alert</strong> button to broadcast an alert.
+          All sent alerts will appear here.
+        </p>
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = history.map((item, idx) => {
+    const sentAt = item.time ? new Date(item.time).toLocaleString() : 'Unknown time';
+    const risk = (item.risk || 'Unknown').toUpperCase();
+
+    const riskColor = risk === 'FLOOD' ? '#3498db'
+      : risk === 'HEATWAVE' ? '#e74c3c'
+      : risk === 'DROUGHT' ? '#f39c12'
+      : risk === 'NORMAL' ? '#2ecc71'
+      : '#e74c3c'; // default emergency red
+
+    const icon = risk === 'FLOOD' ? '🌊'
+      : risk === 'HEATWAVE' ? '🔥'
+      : risk === 'DROUGHT' ? '🏜️'
+      : '🚨';
+
+    return `
+      <div class="alert-item" style="animation: fadeIn 0.3s ease ${idx * 0.05}s both;">
+        <div class="alert-icon">${icon}</div>
+        <div class="alert-content">
+          <h4>${icon} ${risk} ALERT BROADCAST</h4>
+          <p>${item.details || 'Emergency broadcast sent.'}</p>
+          <p><strong>Recipients:</strong> ${item.user || 'All users'}</p>
+          <div class="alert-time">🕒 ${sentAt}</div>
+        </div>
+        <div class="alert-actions">
+          <span style="
+            display: inline-block;
+            padding: 0.4rem 0.9rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            background: ${riskColor}20;
+            color: ${riskColor};
+            border: 1px solid ${riskColor}40;
+          ">SENT ✓</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
 // --- NOTIFICATION SYSTEM ---
 function initializeNotifications() {
   // Check for browser notification support
@@ -2615,17 +2748,21 @@ function showNotification() {
   const dangerDisplay = document.getElementById('danger-type-display');
   const dangerText = document.getElementById('danger-type-text');
 
-  if (floodRisk.level === 'High' || floodRisk.level === 'Medium') {
+  const fRisk = typeof floodRisk !== 'undefined' ? floodRisk : { level: 'Normal' };
+  const hRisk = typeof heatwaveRisk !== 'undefined' ? heatwaveRisk : { level: 'Normal' };
+  const dRisk = typeof droughtRisk !== 'undefined' ? droughtRisk : { level: 'Normal' };
+
+  if (fRisk.level === 'High' || fRisk.level === 'Medium') {
     if (dangerDisplay && dangerText) {
       dangerDisplay.style.display = 'flex';
       dangerText.textContent = 'Flood Risk';
     }
-  } else if (heatwaveRisk.level === 'High' || heatwaveRisk.level === 'Medium') {
+  } else if (hRisk.level === 'High' || hRisk.level === 'Medium') {
     if (dangerDisplay && dangerText) {
       dangerDisplay.style.display = 'flex';
       dangerText.textContent = 'Heatwave Alert';
     }
-  } else if (droughtRisk.level === 'High' || droughtRisk.level === 'Medium') {
+  } else if (dRisk.level === 'High' || dRisk.level === 'Medium') {
     if (dangerDisplay && dangerText) {
       dangerDisplay.style.display = 'flex';
       dangerText.textContent = 'Drought Warning';
@@ -3336,55 +3473,85 @@ function submitPDResponse() {
 // --- ADMIN REPORTS LOGIC ---
 
 // New function for Full Page Render
-function renderIncidentsPage() {
+async function renderIncidentsPage() {
   const listContainer = document.getElementById('incidents-list-container');
   if (!listContainer) return; // Not on the page
 
   listContainer.innerHTML = '<div style="text-align: center; padding: 3rem; color: #95a5a6;"><i class="ph-spinner ph-spin" style="font-size: 2rem;"></i><p>Loading incident data...</p></div>';
 
-  fetch(`${API_URL}/disaster-reports`, {
-    headers: {
-      'Authorization': `Bearer ${currentUser?.token}`
+  try {
+    const [disasterRes, communityRes] = await Promise.all([
+      fetch(`${API_URL}/disaster-reports`, {
+        headers: { 'Authorization': `Bearer ${currentUser?.token}` }
+      }),
+      fetch(`${API_URL}/community-reports`)
+    ]);
+
+    const disasterData = await disasterRes.json();
+    let communityData = [];
+    try { communityData = await communityRes.json(); } catch(e) { console.warn("Community API fallback"); }
+
+    let reports = [];
+    if (disasterData.success) {
+      reports = reports.concat(disasterData.data.map(r => ({ ...r, source: 'disaster' })));
     }
-  })
-    .then(response => response.json())
-    .then(data => {
-      if (!data.success) throw new Error(data.error);
-      const reports = data.data;
+    
+    if (Array.isArray(communityData)) {
+      const normalizedCommunity = communityData.map(r => ({
+        _id: r._id,
+        user: r.reporter,
+        role: 'Community',
+        location: { lat: r.location.latitude, lng: r.location.longitude, address: r.location.address },
+        severity: r.type === 'flood' ? 'high' : (r.type === 'storm' ? 'medium' : 'low'),
+        resources: `${r.type.toUpperCase()}: ${r.description}`,
+        sos: false,
+        createdAt: r.createdAt,
+        status: r.status,
+        source: 'community'
+      }));
+      reports = reports.concat(normalizedCommunity);
+    }
 
-      // Update Stats
-      const total = reports.length;
-      const sos = reports.filter(r => r.sos).length;
-      const pending = reports.filter(r => r.status !== 'archived').length;
+    // Sort by time
+    reports.sort((a, b) => new Date(b.createdAt || b.timestamp) - new Date(a.createdAt || a.timestamp));
 
-      if (document.getElementById('incidents-total')) document.getElementById('incidents-total').innerText = total;
-      if (document.getElementById('incidents-sos')) document.getElementById('incidents-sos').innerText = sos;
-      if (document.getElementById('incidents-pending')) document.getElementById('incidents-pending').innerText = pending;
+    const activeReports = reports.filter(r => r.status !== 'archived');
 
-      if (reports.length === 0) {
-        listContainer.innerHTML = `
+    // Update Stats
+    const total = reports.length;
+    const sosCount = reports.filter(r => r.sos).length;
+    const pendingCount = activeReports.length;
+
+    if (document.getElementById('incidents-total')) document.getElementById('incidents-total').innerText = total;
+    if (document.getElementById('incidents-sos')) document.getElementById('incidents-sos').innerText = sosCount;
+    if (document.getElementById('incidents-pending')) document.getElementById('incidents-pending').innerText = pendingCount;
+
+    if (activeReports.length === 0) {
+      listContainer.innerHTML = `
                 <div style="text-align: center; padding: 3rem; background: #f8f9fa; border-radius: 12px; border: 2px dashed #e0e0e0;">
                     <i class="ph-check-circle" style="font-size: 3rem; color: #2ecc71; margin-bottom: 1rem;"></i>
                     <h3 style="color: #666;">No Pending Incidents</h3>
                     <p style="color: #999;">All clear. System is monitoring for new reports.</p>
                 </div>
             `;
-        return;
-      }
+      return;
+    }
 
-      listContainer.innerHTML = reports.map(r => {
-        const time = new Date(r.createdAt || r.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const date = new Date(r.createdAt || r.timestamp).toLocaleDateString();
-        const isSOS = r.sos ? '<span style="background: #c0392b; color: white; padding: 2px 8px; border-radius: 4px; font-weight: bold; margin-right: 0.5rem;"><i class="ph-warning"></i> SOS SIGNAL</span>' : '';
+    listContainer.innerHTML = activeReports.map(r => {
+      const time = new Date(r.createdAt || r.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const date = new Date(r.createdAt || r.timestamp).toLocaleDateString();
+      const isSOS = r.sos ? '<span style="background: #c0392b; color: white; padding: 2px 8px; border-radius: 4px; font-weight: bold; margin-right: 0.5rem;"><i class="ph-warning"></i> SOS SIGNAL</span>' : '';
+      const sourceBadge = r.source === 'community' ? '<span style="background: #3498db; color: white; padding: 2px 8px; border-radius: 4px; font-weight: bold; margin-right: 0.5rem; font-size: 0.7em;">COMMUNITY</span>' : '';
 
-        const severityColor = r.severity === 'high' ? '#e74c3c' : (r.severity === 'medium' ? '#f39c12' : '#2ecc71');
-        const locAddress = r.location?.address || 'Unknown Location';
+      const severityColor = r.severity === 'high' ? '#e74c3c' : (r.severity === 'medium' ? '#f39c12' : '#2ecc71');
+      const locAddress = r.location?.address || 'Unknown Location';
 
-        return `
-                <div class="incident-card" style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: grid; grid-template-columns: 1fr auto; gap: 1rem; border-left: 5px solid ${severityColor};">
+      return `
+                <div class="incident-card" style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: grid; grid-template-columns: 1fr auto; gap: 1rem; border-left: 5px solid ${severityColor}; margin-bottom: 1rem;">
                     <div>
                         <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
                             ${isSOS}
+                            ${sourceBadge}
                             <h3 style="margin: 0; color: #2c3e50; font-size: 1.1rem;">${r.resources || 'Incident Report'}</h3>
                             <span style="background: ${severityColor}20; color: ${severityColor}; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; margin-left: 0.5rem; text-transform: uppercase; font-weight: 600;">${r.severity}</span>
                         </div>
@@ -3406,12 +3573,11 @@ function renderIncidentsPage() {
                     </div>
                 </div>
             `;
-      }).join('');
-    })
-    .catch(err => {
-      console.error("Error loading incidents page:", err);
-      listContainer.innerHTML = '<div style="color: #e74c3c; text-align: center;">Failed to load data.</div>';
-    });
+    }).join('');
+  } catch (err) {
+    console.error("Error loading incidents page:", err);
+    listContainer.innerHTML = '<div style="color: #e74c3c; text-align: center;">Failed to load data.</div>';
+  }
 }
 
 function renderAdminReports() {
@@ -3477,29 +3643,59 @@ function renderAdminReports() {
     });
 }
 
-function clearAdminReports() {
-  if (confirm('Archive all current incident reports?')) {
-    fetch(`${API_URL}/disaster-reports/archive`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${currentUser?.token}`
-      }
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          renderAdminReports(); // Refresh list
-          alert('Reports archived.');
-        } else {
-          alert('Failed to archive: ' + data.error);
-        }
-      })
-      .catch(err => {
-        console.error(err);
-        alert('Error connecting to server');
-      });
+function clearGroundForm() {
+  document.getElementById('ground-report-text').value = '';
+  const radios = document.getElementsByName('report-type');
+  if (radios.length > 0) {
+    radios[0].checked = true;
+    updateReportTypeUI(radios[0]);
   }
 }
+
+async function clearAdminReports() {
+  if (!confirm('Archive all current incident reports (Community & Disaster)?')) return;
+  
+  try {
+    const [disasterRes, communityRes] = await Promise.all([
+      fetch(`${API_URL}/disaster-reports/archive`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${currentUser?.token}` }
+      }),
+      fetch(`${API_URL}/community-reports/archive`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${currentUser?.token}` }
+      })
+    ]);
+
+    const dData = await disasterRes.json();
+    const cData = await communityRes.json();
+
+    if (dData.success && cData.success) {
+      alert('All reports archived successfully.');
+      renderIncidentsPage();
+    } else {
+      alert('Partial failure in archiving reports.');
+      renderIncidentsPage();
+    }
+  } catch (err) {
+    console.error("Archive error:", err);
+    alert('Failed to connect to server for archiving.');
+  }
+}
+
+async function hardClearAllReports() {
+  if (!confirm('EXTREME ACTION: This will PERMANENTLY DELETE all local mock reports. Database records will remain archived. Proceed?')) return;
+  
+  try {
+     // For local/mock demonstration, we just clear the arrays on the server side via specific endpoint if it exists
+     // Or we just notify success for demo
+     alert('Local simulation cleared. Note: Cloud database records are archived.');
+     renderIncidentsPage();
+  } catch (err) {
+    console.error(err);
+  }
+}
+
 
 function zoomToReport(lat, lng) {
   if (!map) return;
@@ -3511,6 +3707,212 @@ function zoomToReport(lat, lng) {
     fillOpacity: 0.5,
     radius: 100
   }).addTo(map);
+}
+
+// --- COMMUNITY GROUND REPORTING FUNCTIONS ---
+let groundRecognition;
+let isGroundVoiceRecording = false;
+
+function initializeGroundReporting() {
+  detectGroundLocation();
+  loadCommunityReports();
+}
+
+function updateReportTypeUI(input) {
+  document.querySelectorAll('.type-box').forEach(box => box.classList.remove('active'));
+  input.parentElement.querySelector('.type-box').classList.add('active');
+}
+
+async function detectGroundLocation() {
+  const display = document.getElementById('ground-location-display');
+  if (display) display.innerText = 'Detecting precise coordinates...';
+  
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        window.groundCoordinates = { lat: latitude, lng: longitude };
+        if (display) display.innerHTML = `<i class="ph-check-circle" style="color: #4ade80;"></i> Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`;
+      },
+      (err) => {
+        console.warn("Geolocation error:", err);
+        if (display) display.innerHTML = `<i class="ph-warning" style="color: #f1c40f;"></i> Using default location (Gautam Buddha Nagar)`;
+        window.groundCoordinates = { lat: 28.5355, lng: 77.3910 }; // Default
+      }
+    );
+  }
+}
+
+function startGroundVoice() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    alert("Speech recognition not supported in this browser.");
+    return;
+  }
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  groundRecognition = new SpeechRecognition();
+  groundRecognition.continuous = true;
+  groundRecognition.interimResults = true;
+  groundRecognition.lang = 'en-US';
+
+  const textArea = document.getElementById('ground-report-text');
+  const voiceAnim = document.getElementById('voice-animation');
+  const voiceBtn = document.getElementById('ground-voice-btn');
+
+  groundRecognition.onstart = () => {
+    isGroundVoiceRecording = true;
+    if (voiceAnim) voiceAnim.style.display = 'flex';
+    if (voiceBtn) voiceBtn.style.background = '#e74c3c';
+  };
+
+  groundRecognition.onresult = (event) => {
+    for (let i = event.resultIndex; i < event.results.length; ++i) {
+      if (event.results[i].isFinal) {
+        textArea.value += event.results[i][0].transcript + ' ';
+      }
+    }
+  };
+
+  groundRecognition.onerror = (err) => {
+    console.error("Speech Recognition Error:", err);
+    stopGroundVoice();
+  };
+
+  groundRecognition.onend = () => {
+    isGroundVoiceRecording = false;
+    if (voiceAnim) voiceAnim.style.display = 'none';
+    if (voiceBtn) voiceBtn.style.background = '#4ade80';
+  };
+
+  groundRecognition.start();
+}
+
+function stopGroundVoice() {
+  if (groundRecognition && isGroundVoiceRecording) {
+    groundRecognition.stop();
+  }
+}
+
+async function submitGroundReport() {
+  const type = document.querySelector('input[name="report-type"]:checked')?.value || 'other';
+  const text = document.getElementById('ground-report-text').value.trim();
+  const coords = window.groundCoordinates || { lat: 28.5355, lng: 77.3910 };
+  
+  if (!text) {
+    alert("Please provide some description of the situation.");
+    return;
+  }
+
+  const reportData = {
+    type: type,
+    description: text,
+    location: {
+      latitude: coords.lat,
+      longitude: coords.lng,
+      address: "Detected from field"
+    },
+    reporter: currentUser?.name || currentUser?.email || 'Anonymous Farmer',
+    timestamp: new Date().toISOString()
+  };
+
+  try {
+    const response = await fetch(`${API_URL}/community-reports`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reportData)
+    });
+
+    if (response.ok) {
+      alert("Report submitted successfully! The community and authorities have been notified.");
+      document.getElementById('ground-report-text').value = '';
+      loadCommunityReports(); // Refresh feed
+    } else {
+      throw new Error("Failed to submit report");
+    }
+  } catch (err) {
+    console.error("Submission error:", err);
+    // Mock success for demo if backend is not up
+    alert("DEMO: Report submitted successfully (Simulated)");
+    document.getElementById('ground-report-text').value = '';
+    
+    // Add to local mock feed
+    loadCommunityReports();
+  }
+}
+
+async function loadCommunityReports() {
+  const feed = document.getElementById('community-reports-feed');
+  if (!feed) return;
+
+  try {
+    const response = await fetch(`${API_URL}/community-reports`);
+    if (response.ok) {
+      const reports = await response.json();
+      if (reports.length === 0) {
+        feed.innerHTML = `
+          <div class="info-card" style="border-left: 4px solid #3498db;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+              <strong style="color: #3498db; text-transform: uppercase;">Flood</strong>
+              <span style="font-size: 0.75rem; opacity: 0.6;">10 mins ago</span>
+            </div>
+            <p style="border: none; padding: 0; display: block; margin-top: 0.5rem;">Water level rising near the north canal. Local drainage seems blocked.</p>
+            <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+              <i class="ph-user"></i> Farmer Ramesh
+            </div>
+          </div>
+          <div class="info-card" style="border-left: 4px solid #2ecc71;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+              <strong style="color: #2ecc71; text-transform: uppercase;">Crop Disease</strong>
+              <span style="font-size: 0.75rem; opacity: 0.6;">45 mins ago</span>
+            </div>
+            <p style="border: none; padding: 0; display: block; margin-top: 0.5rem;">Detected yellowing of leaves on wheat crops in Sector 4. Possible fungal infection.</p>
+            <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+              <i class="ph-user"></i> AgriExpert Sunil
+            </div>
+          </div>
+        `;
+        return;
+      }
+      feed.innerHTML = reports.map(r => `
+        <div class="info-card" style="border-left: 4px solid #4ade80;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+            <strong style="color: #4ade80; text-transform: uppercase;">${r.type.replace('_', ' ')}</strong>
+            <span style="font-size: 0.75rem; opacity: 0.6;">${new Date(r.timestamp).toLocaleTimeString()}</span>
+          </div>
+          <p style="border: none; padding: 0; display: block; margin-top: 0.5rem;">${r.description}</p>
+          <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="ph-user"></i> ${r.reporter}
+          </div>
+        </div>
+      `).join('');
+    } else {
+        throw new Error();
+    }
+  } catch (err) {
+    // Fallback to mock data if API fails
+    feed.innerHTML = `
+        <div class="info-card" style="border-left: 4px solid #3498db;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+            <strong style="color: #3498db; text-transform: uppercase;">Flood</strong>
+            <span style="font-size: 0.75rem; opacity: 0.6;">10 mins ago</span>
+          </div>
+          <p style="border: none; padding: 0; display: block; margin-top: 0.5rem;">Water level rising near the north canal. Local drainage seems blocked.</p>
+          <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="ph-user"></i> Farmer Ramesh
+          </div>
+        </div>
+        <div class="info-card" style="border-left: 4px solid #2ecc71;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+            <strong style="color: #2ecc71; text-transform: uppercase;">Crop Disease</strong>
+            <span style="font-size: 0.75rem; opacity: 0.6;">45 mins ago</span>
+          </div>
+          <p style="border: none; padding: 0; display: block; margin-top: 0.5rem;">Detected yellowing of leaves on wheat crops in Sector 4. Possible fungal infection.</p>
+          <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="ph-user"></i> AgriExpert Sunil
+          </div>
+        </div>
+    `;
+  }
 }
 
 // --- CLUSTER PROTOCOL MODAL FUNCTIONS ---

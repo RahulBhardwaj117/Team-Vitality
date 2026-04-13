@@ -20,8 +20,8 @@ const defaultWeatherData = [
 ];
 
 // API Base URLs
-const API_URL = 'http://192.168.218.69:5005/api'; // Node.js backend
-const FASTAPI_URL = 'http://192.168.218.69:8001'; // Python AI backend (New Port)
+const API_URL = 'http://localhost:5005/api'; // Node.js backend
+const FASTAPI_URL = 'http://localhost:8001'; // Python AI backend (New Port)
 
 // Load weather data from AI prediction service
 async function loadWeatherData() {

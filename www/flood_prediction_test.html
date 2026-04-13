@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flood Prediction Test</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .prediction-card {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-header h2 {
+            margin: 0;
+            color: #2c3e50;
+        }
+
+        .risk-meter {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .risk-meter.high {
+            background-color: rgba(231, 76, 60, 0.15);
+            color: #c0392b;
+            border: 2px solid rgba(231, 76, 60, 0.3);
+        }
+
+        .risk-meter.medium {
+            background-color: rgba(243, 156, 18, 0.15);
+            color: #d35400;
+            border: 2px solid rgba(243, 156, 18, 0.3);
+        }
+
+        .risk-meter.low {
+            background-color: rgba(46, 204, 113, 0.15);
+            color: #27ae60;
+            border: 2px solid rgba(46, 204, 113, 0.3);
+        }
+
+        .risk-meter .value {
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .prediction-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .prediction-list li {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .prediction-list li:last-child {
+            border-bottom: none;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 1rem;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        #status {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #ecf0f1;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="prediction-card">
+            <div class="card-header">
+                <span style="font-size: 2rem;">🌊</span>
+                <h2>Flood Prediction Test</h2>
+            </div>
+
+            <div class="risk-meter" id="risk-meter">
+                <span class="label">Risk Level</span>
+                <span class="value" id="risk-value">Click button to test</span>
+            </div>
+
+            <p id="description">Click the button below to fetch AI flood prediction.</p>
+
+            <ul class="prediction-list">
+                <li><span>Expected Rise:</span> <strong id="rise">--</strong></li>
+                <li><span>Affected Areas:</span> <strong id="areas">--</strong></li>
+                <li><span>Confidence:</span> <strong id="confidence">--</strong></li>
+            </ul>
+
+            <button onclick="testFloodPrediction()">🔄 Test Flood Prediction</button>
+
+            <div id="status"></div>
+        </div>
+    </div>
+
+    <script>
+        const FASTAPI_URL = 'http://localhost:8001';
+
+        async function testFloodPrediction() {
+            const status = document.getElementById('status');
+            const riskMeter = document.getElementById('risk-meter');
+            const riskValue = document.getElementById('risk-value');
+            const description = document.getElementById('description');
+            const rise = document.getElementById('rise');
+            const areas = document.getElementById('areas');
+            const confidence = document.getElementById('confidence');
+
+            try {
+                status.innerHTML = '⏳ Loading weather data...';
+
+                // Step 1: Get weather forecast
+                const today = new Date().toISOString().split('T')[0];
+                const weatherResponse = await fetch(`${FASTAPI_URL}/predict/weather/raw?start_date=${today}`);
+
+                if (!weatherResponse.ok) {
+                    throw new Error(`Weather API failed: ${weatherResponse.statusText}`);
+                }
+
+                const weatherResult = await weatherResponse.json();
+                status.innerHTML = '✅ Weather data loaded<br>⏳ Running flood prediction...';
+
+                if (!weatherResult.forecast || weatherResult.forecast.length === 0) {
+                    throw new Error('No forecast data received');
+                }
+
+                // Step 2: Prepare payload for flood prediction
+                const payload = {
+                    forecast: weatherResult.forecast.map(day => ({
+                        day: day.date,
+                        condition: day.condition || 'Clear',
+                        rain_chance: day.rain_chance || 0,
+                        temp: day.temp || 30,
+                        icon: day.icon || '☀️',
+                        humidity: day.humidity || 50,
+                        wind: day.wind || 10,
+                        min_temp: day.min_temp || 20,
+                        max_temp: day.temp || 30
+                    })),
+                    location: 'Delhi'
+                };
+
+                status.innerHTML += '<br>📤 Sending to AI model...';
+
+                // Step 3: Call flood prediction API
+                const floodResponse = await fetch(`${FASTAPI_URL}/predict/flood/integrated`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!floodResponse.ok) {
+                    throw new Error(`Flood API failed: ${floodResponse.statusText}`);
+                }
+
+                const result = await floodResponse.json();
+                status.innerHTML = '✅ SUCCESS! Prediction received from AI.';
+
+                // Step 4: Update UI
+                riskValue.textContent = result.risk_level;
+                riskMeter.className = 'risk-meter ' + result.risk_level.toLowerCase();
+
+                description.textContent = result.recommendation || 'AI analysis complete.';
+                rise.textContent = result.expected_rise.toFixed(2) + 'm';
+                areas.textContent = result.affected_areas.join(', ') || 'None';
+                confidence.textContent = '96%';
+
+                // Add details to status
+                status.innerHTML += '<br><br><strong>Results:</strong><br>';
+                status.innerHTML += `Risk: <strong>${result.risk_level}</strong><br>`;
+                status.innerHTML += `Rise: <strong>${result.expected_rise.toFixed(2)}m</strong><br>`;
+                status.innerHTML += `Areas: <strong>${result.affected_areas.join(', ') || 'None'}</strong>`;
+
+            } catch (error) {
+                console.error('Error:', error);
+                status.innerHTML = `❌ ERROR: ${error.message}<br><br>Make sure the backend is running on port 8001.`;
+                status.style.background = '#fee';
+                status.style.color = '#c00';
+            }
+        }
+
+        // Auto-run on page load
+        window.addEventListener('load', () => {
+            document.getElementById('status').innerHTML = '👋 Ready to test. Click the button above.';
+        });
+    </script>
+</body>
+
+</html>

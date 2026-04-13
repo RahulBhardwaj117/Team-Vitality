@@ -61,20 +61,12 @@ if ('serviceWorker' in navigator) {
         const hash = window.location.hash.substring(1);
         if (hash && hash !== 'dashboard') {
           setTimeout(() => {
-            if (typeof switchSection === 'function') switchSection(hash);
+            switchSection(hash);
           }, 100);
         }
       } else {
-        // Show landing page by default
+        // Show landing page by default - users click "Get Started" to access login
         showLanding();
-      }
-    });
-
-    // Handle all hash changes for navigation
-    window.addEventListener('hashchange', function() {
-      const hash = window.location.hash.substring(1);
-      if (hash && typeof switchSection === 'function') {
-        switchSection(hash);
       }
     });
 

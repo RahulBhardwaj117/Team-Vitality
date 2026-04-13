@@ -10,7 +10,7 @@
   }
 
   // API Base URL
-  const API_URL = 'http://localhost:5000/api';
+  const API_URL = 'http://localhost:5005/api';
 
   // Signup functionality
   const signupForm = document.getElementById("signup-form");
