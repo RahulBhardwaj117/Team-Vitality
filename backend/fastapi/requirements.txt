@@ -22,3 +22,6 @@ matplotlib
 tensorflow>=2.16.1
 python-dateutil
 google-genai
+twilio
+python-dotenv
+requests
