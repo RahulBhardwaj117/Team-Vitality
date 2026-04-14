@@ -30,11 +30,12 @@ if exist "%~dp0backend\server.js" (
 )
 
 :: 4. Launch Frontend
-echo [INFO] Launching Dashboard...
-:: Wait a few seconds for backends to initialize
-timeout /t 5 /nobreak >nul
+echo [INFO] Starting Frontend Server...
 if exist "%~dp0frontend\index.html" (
-    start "" "%~dp0frontend\index.html"
+    start "AgriUrbanAI Frontend" cmd /k "cd /d ""%~dp0frontend"" && python -m http.server 3000"
+    :: Wait a few seconds for backends and frontend server to initialize
+    timeout /t 5 /nobreak >nul
+    start "" "http://localhost:3000"
 ) else (
     echo [ERROR] Frontend index.html not found!
 )
