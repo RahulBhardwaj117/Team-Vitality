@@ -14,21 +14,16 @@ from app.schemas.prediction_schemas import (
     GroundwaterResponse, ComprehensiveResponse
 )
 
-# Import existing AI modules from predictions folder
-predictions_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'predictions'))
-sys.path.insert(0, predictions_path)
+# Heavy AI modules will be lazy-loaded inside methods to save memory on Render startup
+from app.services.llm_service import llm_service
 
-try:
-    import weather_forcast
-    import flood_prediction
-    import drought_prediction
-    from heatwave_prediction import HeatwaveForecaster
-    import groundwater_forcast
-    import fertilizer_recommendation
-except ImportError as e:
-    logging.error(f"Failed to import AI modules: {e}")
-    # Don't raise immediately, allow partial functionality
-    pass
+logger = logging.getLogger("AgriUrbanAI")
+
+# Thread pool for running blocking AI models
+executor = ThreadPoolExecutor(max_workers=10)
+
+def get_predictions_path():
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'predictions'))
 
 from app.services.llm_service import llm_service
 
@@ -47,6 +42,10 @@ class PredictionService:
         """
         Wraps weather_forcast.get_weather_forecast in a thread
         """
+        if get_predictions_path() not in sys.path:
+            sys.path.insert(0, get_predictions_path())
+        import weather_forcast
+        
         date_str = target_date.strftime("%Y-%m-%d")
         
         # Run blocking code in thread pool
@@ -130,6 +129,10 @@ class PredictionService:
         """
         Predict flood risk for a date range
         """
+        if get_predictions_path() not in sys.path:
+            sys.path.insert(0, get_predictions_path())
+        import flood_prediction
+        
         logger.info(f"Predicting flood risk from {start_date} to {end_date}")
         
         # Convert to datetime for flood_prediction module
@@ -198,6 +201,10 @@ class PredictionService:
         """
         Predict drought severity for a date range
         """
+        if get_predictions_path() not in sys.path:
+            sys.path.insert(0, get_predictions_path())
+        import drought_prediction
+        
         logger.info(f"Predicting drought from {start_date} to {end_date}, scenario: {scenario}")
         
         # Convert to datetime
@@ -236,6 +243,10 @@ class PredictionService:
         """
         Predict heatwave for a date range
         """
+        if get_predictions_path() not in sys.path:
+            sys.path.insert(0, get_predictions_path())
+        from heatwave_prediction import HeatwaveForecaster
+        
         logger.info(f"Predicting heatwave from {start_date} to {end_date}, scenario: {scenario}")
         
         # Initialize forecaster if needed
@@ -278,6 +289,10 @@ class PredictionService:
         """
         Predict groundwater level for a district
         """
+        if get_predictions_path() not in sys.path:
+            sys.path.insert(0, get_predictions_path())
+        import groundwater_forcast
+        
         logger.info(f"Predicting groundwater for district: {district}")
         
         # If no district specified, use Central Delhi as default
@@ -325,10 +340,14 @@ class PredictionService:
             recommendations=llm_rec.get("actions", [])
         )
 
-    async def predict_fertilizer(self, crop: str, soil_type: str) -> dict:
+    async def predict_fertilizer(self, crop: str, soil_type: str, n: float = None, p: float = None, k: float = None):
         """
-        Recommend fertilizer
+        Generate fertilizer recommendations.
         """
+        if get_predictions_path() not in sys.path:
+            sys.path.insert(0, get_predictions_path())
+        import fertilizer_recommendation
+        
         logger.info(f"Recommending fertilizer for {crop} in {soil_type} soil")
         
         loop = asyncio.get_event_loop()
@@ -381,41 +400,7 @@ class PredictionService:
             risk_summary=llm_rec.get("recommendation", "Comprehensive analysis complete.")
         )
 
-    async def predict_fertilizer(self, crop: str, soil_type: str, n: float = None, p: float = None, k: float = None):
-        """
-        Generate fertilizer recommendations.
-        """
-        try:
-            # Run in thread pool to avoid blocking
-            loop = asyncio.get_event_loop()
-            result = await loop.run_in_executor(
-                self.executor,
-                fertilizer_recommendation.get_recommendation,
-                crop,
-                soil_type,
-                n,
-                p,
-                k
-            )
-            
-            # Enhance with LLM if available
-            if self.llm_service:
-                try:
-                    llm_advice = await self.llm_service.generate_recommendation({
-                        "type": "Fertilizer",
-                        "crop": crop,
-                        "soil": soil_type,
-                        "deficits": result.get("recommended_nutrients", {}),
-                        "recommendations": result.get("recommendations", [])
-                    })
-                    result["ai_advice"] = llm_advice
-                except Exception as e:
-                    logger.error(f"LLM enhancement failed for fertilizer: {e}")
-            
-            return result
-        except Exception as e:
-            logger.error(f"Fertilizer prediction failed: {e}")
-            raise ValueError(f"Fertilizer prediction failed: {str(e)}")
+    pass
 
 prediction_service = PredictionService()
 
