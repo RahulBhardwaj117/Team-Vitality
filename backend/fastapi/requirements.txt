@@ -22,6 +22,7 @@ matplotlib
 tensorflow-cpu>=2.16.1
 python-dateutil
 google-generativeai
+google-genai
 twilio
 python-dotenv
 requests
