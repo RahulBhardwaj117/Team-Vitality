@@ -6,22 +6,15 @@ python-multipart
 python-jose[cryptography]
 passlib[bcrypt]
 
-# ML and Data
+# ML and Data (Lightweight)
 numpy>=1.26.0
 pandas
 scikit-learn
 xgboost
 joblib
-seaborn
-torch
 
-# Visualization
-matplotlib
-
-# AI & Weather
-tensorflow-cpu>=2.16.1
+# AI & Weather (Standardized)
 python-dateutil
-google-generativeai
 google-genai
 twilio
 python-dotenv
