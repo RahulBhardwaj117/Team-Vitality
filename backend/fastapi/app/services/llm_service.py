@@ -1,9 +1,6 @@
 import os
 import logging
-try:
-    from google import genai
-except ImportError:
-    genai = None
+from google import genai
 from dotenv import load_dotenv
 
 # Load environment variables (one level up)
@@ -14,21 +11,17 @@ logger = logging.getLogger("AgriUrbanAI")
 
 class LLMService:
     def __init__(self):
-        # Retrieve API key from environment
-        self.api_key = os.getenv("GEMINI_API_KEY")
+        # Prefer environment variable over hardcoded key for security
+        self.api_key = os.getenv("GEMINI_API_KEY") or "AIzaSyCmD1E_rHZX0-tn5oqS0yx3XQ-Y2bE_fyg"
         
         if not self.api_key:
-            logger.error("GEMINI_API_KEY not found in environment. AI features will be disabled.")
+            logger.warning("GEMINI_API_KEY not found in environment.")
             self.client = None
         else:
             try:
                 # Initialize modern Google GenAI Client
-                from google import genai
                 self.client = genai.Client(api_key=self.api_key)
-                logger.info("Successfully initialized Gemini AI Client (1.5 Flash).")
-            except ImportError:
-                logger.error("Failed to import 'genai' from 'google'. Ensure 'google-genai' is installed.")
-                self.client = None
+                logger.info("Successfully initialized Gemini AI Client.")
             except Exception as e:
                 logger.error(f"Failed to configure Gemini Client: {e}")
                 self.client = None
