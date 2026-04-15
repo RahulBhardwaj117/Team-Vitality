@@ -1,6 +1,6 @@
 (function() {
   // API Base URL
-  const API_URL = 'http://localhost:5005/api';
+  const API_URL = 'https://team-vitality-1.onrender.com/api';
 
   // Always allow demo users as fallback
   const DEMO_USERS = [

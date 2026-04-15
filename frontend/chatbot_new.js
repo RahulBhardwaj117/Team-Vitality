@@ -5,7 +5,7 @@
 
 class AgriUrbanChatbot {
   constructor() {
-    this.apiBaseUrl = 'http://localhost:5005/api/chat';
+    this.apiBaseUrl = 'https://team-vitality-1.onrender.com/api/chat';
     this.sessionId = this.getOrCreateSessionId();
     this.messages = [];
     this.isOpen = false;
