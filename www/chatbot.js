@@ -344,7 +344,7 @@ class AgriUrbanChatbot {
 
     try {
       // Gemini API Integration
-      const GEMINI_API_KEY = 'AIzaSyA5BuCNj1fgJNnwryjjLUKxjIluCzSrbnc';
+      const GEMINI_API_KEY = 'AIzaSyCmD1E_rHZX0-tn5oqS0yx3XQ-Y2bE_fyg';
 
       // List of models to try in order of preference
       const models = [

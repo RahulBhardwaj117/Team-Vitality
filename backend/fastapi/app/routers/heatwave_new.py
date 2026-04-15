@@ -31,7 +31,7 @@ class HeatwavePredictionResponse(BaseModel):
     confidence: int
     recommendation: str
 
-GEMINI_API_KEY = "AIzaSyA5BuCNj1fgJNnwryjjLUKxjIluCzSrbnc"
+GEMINI_API_KEY = "AIzaSyCmD1E_rHZX0-tn5oqS0yx3XQ-Y2bE_fyg"
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
 
 def calculate_heatwave_risk(forecast_data):

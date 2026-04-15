@@ -12,7 +12,7 @@ logger = logging.getLogger("AgriUrbanAI")
 class LLMService:
     def __init__(self):
         # Prefer environment variable over hardcoded key for security
-        self.api_key = os.getenv("GEMINI_API_KEY") or "AIzaSyD1dHOT_Yh6vRtTdJz-HbAtbNu_IP-OMEU"
+        self.api_key = os.getenv("GEMINI_API_KEY") or "AIzaSyCmD1E_rHZX0-tn5oqS0yx3XQ-Y2bE_fyg"
         
         if not self.api_key:
             logger.warning("GEMINI_API_KEY not found in environment.")

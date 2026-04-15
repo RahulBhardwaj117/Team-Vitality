@@ -2,7 +2,7 @@ const axios = require('axios');
 const { logger } = require('../middleware/loggingMiddleware');
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8001';
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyA5BuCNj1fgJNnwryjjLUKxjIluCzSrbnc';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyCmD1E_rHZX0-tn5oqS0yx3XQ-Y2bE_fyg';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
 
 /**
