@@ -21,7 +21,7 @@ matplotlib
 # AI & Weather
 tensorflow-cpu>=2.16.1
 python-dateutil
-google-genai
+google-generativeai
 twilio
 python-dotenv
 requests
