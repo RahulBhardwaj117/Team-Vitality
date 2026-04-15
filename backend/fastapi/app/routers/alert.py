@@ -18,10 +18,8 @@ alert_service = AlertService()
 
 # Users from recent update
 DEFAULT_USERS = [
-    {"name": "Pramod Pandey", "phone": "+918858031887", "language": "en"},
     {"name": "Rishabh Verma", "phone": "+919457829890", "language": "hi"},
     {"name": "Rahul Bhardwaj", "phone":"+917307438928", "language": "kn"},
-    {"name": "Mihir Sinha", "phone":"+918882429871", "language": "hi"},
     {"name": "Sakshi Sharma", "phone":"+917303305787", "language": "en"},
     {"name": "Sambhawna Bajpei", "phone":"+918368160206", "language": "kn"}
 ]
