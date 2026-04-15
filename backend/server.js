@@ -358,7 +358,7 @@ process.on('SIGINT', () => {
 });
 
 // Start server
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5005;
 
 if (require.main === module) {
   initializeServices().then(() => {
