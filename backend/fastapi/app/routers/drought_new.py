@@ -35,22 +35,13 @@ class DroughtPredictionResponse(BaseModel):
 GEMINI_API_KEY = "AIzaSyCmD1E_rHZX0-tn5oqS0yx3XQ-Y2bE_fyg"
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
 
-# Add the directory containing the model script to sys.path
-# Current file: backend/fastapi/app/routers/drought_new.py
-# Target: backend/fastapi/training
-# Path: ../../training
-training_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../training"))
-sys.path.append(training_path)
-
-print(f"DEBUG: Added to sys.path: {training_path}")
-
-# Import the model logic
 try:
+    # Add the directory containing the model script to sys.path
+    import sys
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../fastapi/training")))
     import train_drought_model_improved as drought_model
-    print("DEBUG: Successfully imported train_drought_model_improved")
-except Exception as e:
-    print(f"ERROR: Error importing train_drought_model_improved: {e}")
-    print(f"DEBUG: sys.path is: {sys.path}")
+except ImportError as e:
+    logger.warning(f"Drought model logic from training script not available: {e}")
     drought_model = None
 
 def calculate_drought_risk(forecast_data):

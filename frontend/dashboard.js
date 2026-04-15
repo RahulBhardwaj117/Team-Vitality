@@ -2793,7 +2793,7 @@ function showNotification() {
   if ("Notification" in window && Notification.permission === "granted") {
     const notification = new Notification("AgriUrbanAI Alert", {
       body: "New weather alert available. Check your dashboard for details.",
-      icon: "🌦️"
+      icon: null // Use default notification icon to avoid 404 file errors
     });
 
     notification.onclick = function () {
