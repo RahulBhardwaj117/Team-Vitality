@@ -1,5 +1,6 @@
 const catchAsync = require('../utils/catchAsync');
 const Alert = require('../models/Alert');
+const { logger } = require('../middleware/loggingMiddleware');
 
 exports.getAlerts = catchAsync(async (req, res) => {
   const alerts = await Alert.find().sort({ createdAt: -1 }).limit(100);
