@@ -1,5 +1,5 @@
 import os
-import google.generativeai as genai
+from google import genai
 import logging
 from dotenv import load_dotenv
 
@@ -11,18 +11,23 @@ load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path
 
 logger = logging.getLogger("AgriUrbanAI")
 
-if os.getenv("GEMINI_API_KEY"):
-    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-    model = genai.GenerativeModel("gemini-pro")
+API_KEY = os.getenv("GEMINI_API_KEY") or "AIzaSyCmD1E_rHZX0-tn5oqS0yx3XQ-Y2bE_fyg"
+client = None
+
+if API_KEY:
+    try:
+        client = genai.Client(api_key=API_KEY)
+        logger.info("Successfully initialized Gemini Client in Advisor Service.")
+    except Exception as e:
+        logger.error(f"Failed to init Gemini Client: {e}")
 else:
     logger.warning("GEMINI_API_KEY not found. AI advice will be disabled.")
-    model = None
 
 async def generate_short_advice(risk_type: str, temp: float, lang: str = "en") -> str:
     """
     Generates a very short (1 sentence) advice for SMS/Voice.
     """
-    if not model:
+    if not client:
         return "Please consult local authorities."
         
     try:
@@ -33,10 +38,10 @@ async def generate_short_advice(risk_type: str, temp: float, lang: str = "en") -
         Do not use emojis. output only the sentence.
         """
         
-        # Run blocking call in executor if needed, but for now simple await if possible? 
-        # Gemini lib is sync by default usually unless async method used.
-        # We'll use the sync method directly as it's fast enough or wrap it if needed.
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=prompt
+        )
         return response.text.replace("\n", " ").strip()
     except Exception as e:
         logger.error(f"Gemini generation failed: {e}")
