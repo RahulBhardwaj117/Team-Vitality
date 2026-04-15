@@ -5,6 +5,9 @@ import pandas as pd
 import requests
 import os
 import sys
+import logging
+
+logger = logging.getLogger("AgriUrbanAI")
 
 router = APIRouter()
 
