@@ -100,4 +100,7 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=True)
+    # Use Render's dynamic port or default to 10000 (Render default)
+    port = int(os.getenv("PORT", 10000))
+    # Disable reload in production for better stability
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)

@@ -1,21 +1,30 @@
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
-import torch
-import torch.nn as nn
+try:
+    import torch
+    import torch.nn as nn
+    HAS_TORCH = True
+except ImportError:
+    HAS_TORCH = False
 import os
 
-# --- MODEL DEFINITION ---
-class LSTMModel(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size):
-        super(LSTMModel, self).__init__()
-        self.lstm = nn.LSTM(input_size, hidden_size, batch_first=True)
-        self.fc = nn.Linear(hidden_size, output_size)
+if HAS_TORCH:
+    # --- MODEL DEFINITION ---
+    class LSTMModel(nn.Module):
+        def __init__(self, input_size, hidden_size, output_size):
+            super(LSTMModel, self).__init__()
+            self.lstm = nn.LSTM(input_size, hidden_size, batch_first=True)
+            self.fc = nn.Linear(hidden_size, output_size)
 
-    def forward(self, x):
-        out, _ = self.lstm(x)
-        out = self.fc(out[:, -1, :])
-        return out
+        def forward(self, x):
+            out, _ = self.lstm(x)
+            out = self.fc(out[:, -1, :])
+            return out
+else:
+    # Mock class for environment without torch
+    class LSTMModel:
+        def __init__(self, *args, **kwargs): pass
 
 # --- GLOBAL VARS ---
 features = ['MaxTemp', 'MinTemp', 'sunshine_duration', 'precipitation_probability_max', 'wind_speed_10m_max', 'Evapotranspiration']
@@ -122,7 +131,8 @@ def predict_7_days(last_7_days_data):
         return [0.0] * 7
 
 # Run initialization immediately on import (but safe now)
-initialize_model()
+if HAS_TORCH:
+    initialize_model()
 
 # --- TRAINING LOGIC (Only runs if script executed directly) ---
 if __name__ == "__main__":
