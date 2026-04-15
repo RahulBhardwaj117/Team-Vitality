@@ -173,70 +173,61 @@ async def trigger_random_alert(bg: BackgroundTasks):
         logger.error(f"Failed to configure Gemini: {e}")
         client = None
 
-    try:
-        # Select random user
-        user = random.choice(DEFAULT_USERS)
-        
-        # User requirement: "flood alert will be send"
-        risk_type = "flood"
-        
-        # Simulate conditions for flood
-        temp = 28
-        rain = 150 # High rain
-        
-        # Get Recommendation from Gemini
+    results = []
+    success_count = 0
+    failure_count = 0
+
+    # User requirement: "flood alert will be send"
+    risk_type = "flood"
+    rain = 150 # Simulated high rain
+
+    for user in DEFAULT_USERS:
+        target_phone = user["phone"]
+        if not is_valid_phone(target_phone):
+            logger.warning(f"⚠️ Skipping invalid number for {user['name']}: {target_phone}")
+            continue
+
+        # Get Recommendation from Gemini (Cache it for efficiency)
         recommendation = ""
         if client:
             try:
                 prompt = f"Write a specific, urgent notification (max 1 sentence) for a user named {user['name']} who is facing a moderate flood in {user.get('location', 'their area')}. Do not use emojis."
                 response = client.models.generate_content(
-                    model="gemini-1.5-flash",
+                    model="gemini-2.0-flash",
                     contents=prompt
                 )
                 recommendation = response.text.strip()
             except Exception as e:
-                logger.error(f"Gemini generation failed: {e}")
-                recommendation = f"Emergency Alert: Flood risk detected. Move to safe ground."
+                logger.error(f"Gemini generation failed for {user['name']}: {e}")
+                recommendation = f"Urgent: Flood risk in your area. Please move to higher ground immediately."
         else:
-            recommendation = "Ensure drainage channels are clear."
+            recommendation = "Emergency: High flood risk. Evacuate if necessary."
 
-        # Construct message
-        message = (
-            f"🚨 FLOOD ALERT! Hello {user['name']}, heavy rain predicted ({rain}mm). "
-            f"Advisory: {recommendation} - AgriUrbanAI"
-        )
+        message = (f"🚨 FLOOD BROADCAST! Hello {user['name']}, heavy rain ({rain}mm) detected. "
+                   f"Advisory: {recommendation} — AgriUrbanAI")
+
+        # REAL SEND
+        logger.info(f"📤 Broadcasting SMS to {user['name']} ({target_phone})...")
+        success, error = send_sms_sync(target_phone, message)
         
-        # Send to the actual user's phone number directly
-        target_phone = user["phone"]
-        sms_status = "skipped"
-        sms_error = None
-        
-        if is_valid_phone(target_phone):
-            # REAL SMS SENDING
-            # Using synchronous send to ensure we know if it succeeded
-            logger.info(f"Initiating real SMS to {target_phone} via Twilio...")
-            success, error = send_sms_sync(target_phone, message)
-            
-            if success:
-                logger.info(f"✅ SMS successfully sent to {user['name']} at {target_phone}")
-                sms_status = "sent"
-            else:
-                logger.error(f"❌ SMS failed to {user['name']} ({target_phone}): {error}")
-                sms_status = "failed"
-                sms_error = error
+        if success:
+            success_count += 1
+            results.append({"user": user['name'], "status": "sent"})
         else:
-            logger.warning(f"⚠️ Invalid phone number for {user['name']}: {target_phone}")
-            sms_status = "invalid_number"
-            
-        return {
-            "status": "success" if sms_status == "sent" else "warning",
-            "message": message,
-            "user": user,
-            "risk": risk_type,
-            "sent_to": target_phone,
-            "delivery_status": sms_status,
-            "delivery_error": sms_error,
-            "recommendation": recommendation if recommendation else "Check generic flood guidelines."
+            failure_count += 1
+            results.append({"user": user['name'], "status": "failed", "error": error})
+
+    return {
+        "status": "success" if success_count > 0 else "error",
+        "broadcast_summary": {
+            "success": success_count,
+            "failed": failure_count,
+            "total": len(DEFAULT_USERS)
+        },
+        "details": results,
+        "risk": risk_type,
+        "recommendation_used": recommendation
+    }
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
