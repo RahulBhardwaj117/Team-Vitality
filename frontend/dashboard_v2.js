@@ -21,7 +21,7 @@ const defaultWeatherData = [
 
 // API Base URLs
 const API_URL = 'https://team-vitality-1.onrender.com/api'; // Node.js backend
-const FASTAPI_URL = 'http://localhost:8001'; // Python AI backend (New Port)
+const FASTAPI_URL = 'https://team-vitality-2.onrender.com'; // Python AI backend (New Port)
 
 // Load weather data from AI prediction service
 async function loadWeatherData() {
