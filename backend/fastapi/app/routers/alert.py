@@ -165,16 +165,12 @@ async def trigger_random_alert(bg: BackgroundTasks):
     Forces 'flood' risk and adds a specific Gemini recommendation.
     """
     import random
-    import google.generativeai as genai
-    
-    # Configure Gemini
-    GEMINI_API_KEY = "AIzaSyCmD1E_rHZX0-tn5oqS0yx3XQ-Y2bE_fyg"
     try:
-        genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel('gemini-pro')
-    except Exception as e:
-        logger.error(f"Failed to configure Gemini: {e}")
-        model = None
+        from google import genai
+    except ImportError:
+        genai = None
+
+    api_key = os.getenv("GEMINI_API_KEY")
 
     try:
         # Select random user
@@ -189,15 +185,19 @@ async def trigger_random_alert(bg: BackgroundTasks):
         
         # Get Recommendation from Gemini
         recommendation = ""
-        if model:
+        if api_key and genai:
             try:
+                client = genai.Client(api_key=api_key)
                 prompt = (
                     f"You are an expert agricultural advisor in India. "
                     f"There is a HIGH FLOOD RISK (Rainfall: {rain}mm) for a farmer named {user['name']}. "
                     f"Provide a very short, urgent, 1-sentence action recommendation in English. "
                     f"Keep it under 15 words."
                 )
-                response = model.generate_content(prompt)
+                response = client.models.generate_content(
+                    model='gemini-1.5-flash',
+                    contents=prompt
+                )
                 recommendation = response.text.strip()
             except Exception as e:
                 logger.error(f"Gemini generation failed: {e}")

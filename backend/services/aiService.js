@@ -2,8 +2,11 @@ const axios = require('axios');
 const { logger } = require('../middleware/loggingMiddleware');
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8001';
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyCmD1E_rHZX0-tn5oqS0yx3XQ-Y2bE_fyg';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+// Use gemini-1.5-flash for better performance and more modern features
+const GEMINI_MODEL = 'gemini-1.5-flash';
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
 
 /**
  * Fetch comprehensive prediction from Python AI Microservice
@@ -13,6 +16,10 @@ const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemi
  */
 const getComprehensivePrediction = async (startDate, endDate, district = 'Gautam Buddha Nagar') => {
   try {
+    if (!startDate || !endDate) {
+      throw new Error('startDate and endDate are required');
+    }
+
     // Format dates as YYYY-MM-DD
     const startStr = startDate.toISOString().split('T')[0];
     const endStr = endDate.toISOString().split('T')[0];
@@ -30,17 +37,22 @@ const getComprehensivePrediction = async (startDate, endDate, district = 'Gautam
   } catch (error) {
     logger.error('Error fetching AI predictions:', error.message);
     if (error.response) {
-      logger.error('AI Service Response:', error.response.data);
+      logger.error('AI Service Response Status:', error.response.status);
     }
     return null;
   }
 };
 
 /**
- * Generate AI Recommendations using Gemini
+ * Generate AI Recommendations using Gemini 1.5 Flash
  * @param {Object} data - The prediction data (flood, drought, heatwave risks)
  */
 const getGeminiRecommendation = async (data) => {
+  if (!GEMINI_API_KEY) {
+    logger.error('GEMINI_API_KEY is missing in environment variables');
+    return "AI recommendation service is not configured (Missing API Key).";
+  }
+
   try {
     const prompt = `
       You are an expert agricultural and urban planning consultant. 
@@ -67,14 +79,19 @@ const getGeminiRecommendation = async (data) => {
       }]
     });
 
-    if (response.data && response.data.candidates && response.data.candidates.length > 0) {
+    // Check for valid response structure (Gemini API v1beta)
+    if (response.data?.candidates?.[0]?.content?.parts?.[0]?.text) {
       return response.data.candidates[0].content.parts[0].text;
     }
 
-    return "Unable to generate AI recommendations at this time.";
+    logger.warn('Gemini API returned an unexpected response structure:', JSON.stringify(response.data));
+    return "Unable to parse AI recommendations from the provider.";
 
   } catch (error) {
     logger.error('Error calling Gemini API:', error.message);
+    if (error.response?.data?.error) {
+      logger.error('Gemini API Error details:', error.response.data.error.message);
+    }
     return "AI Recommendation service temporarily unavailable.";
   }
 };

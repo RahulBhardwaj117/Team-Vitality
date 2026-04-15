@@ -100,4 +100,7 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=True)
+    # Use environment variable PORT if available (required for Render/Heroku)
+    port = int(os.environ.get("PORT", 8001))
+    logger.info(f"Starting server on port {port}...")
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)

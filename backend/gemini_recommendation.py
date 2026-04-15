@@ -1,9 +1,16 @@
-import google.generativeai as genai
+try:
+    from google import genai
+except ImportError:
+    genai = None
 import os
 
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+def get_client():
+    api_key = os.getenv("GEMINI_API_KEY")
+    if api_key and genai:
+        return genai.Client(api_key=api_key)
+    return None
 
-model = genai.GenerativeModel("gemini-pro")
+client = get_client()
 
 def get_recommendation(risk, temp=None, rainfall=None):
     prompt = f"""
@@ -18,6 +25,10 @@ def get_recommendation(risk, temp=None, rainfall=None):
     Use very simple language for farmers in India.
     """
 
-    response = model.generate_content(prompt)
+    if not client:
+        return "Monitor crop health and ensure proper irrigation."
 
-    return response.text.strip()
+    response = client.models.generate_content(
+        model="gemini-1.5-flash",
+        contents=prompt
+    )

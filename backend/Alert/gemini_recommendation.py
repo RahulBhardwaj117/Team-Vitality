@@ -1,5 +1,9 @@
 import os
-from google import genai
+try:
+    from google import genai
+except ImportError:
+    genai = None
+
 from dotenv import load_dotenv
 
 # Ensure .env is loaded (one level up)
@@ -8,14 +12,16 @@ load_dotenv(dotenv_path=env_path, override=True)
 
 # Initialize Client gracefully
 api_key = os.getenv("GEMINI_API_KEY")
-debug_key = "SET" if api_key else "None"
-print(f"DEBUG: Using Gemini Key: {debug_key}")
 client = None
-if api_key:
+
+if api_key and genai:
     try:
         client = genai.Client(api_key=api_key)
+        print("DEBUG: Gemini Recommendation client initialized.")
     except Exception as e:
         print(f"DEBUG: Failed to initialize Gemini Client: {e}")
+elif not genai:
+    print("DEBUG: 'google-genai' package not found. Using fallback recommendations.")
 
 def get_recommendation(risk, temp=None, rainfall=None):
     """
