@@ -228,6 +228,3 @@ async def trigger_random_alert(bg: BackgroundTasks):
         "risk": risk_type,
         "recommendation_used": recommendation
     }
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
